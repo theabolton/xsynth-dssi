@@ -34,6 +34,12 @@ extern GtkWidget *open_file_position_window;
 extern GtkObject *open_file_position_spin_adj;
 extern GtkWidget *open_file_position_name_label;
 
+extern GtkWidget *save_file_range_window;
+extern GtkObject *save_file_start_spin_adj;
+extern GtkWidget *save_file_start_name;
+extern GtkObject *save_file_end_spin_adj;
+extern GtkWidget *save_file_end_name;
+
 extern GtkWidget *edit_save_position_window;
 extern GtkObject *edit_save_position_spin_adj;
 extern GtkWidget *edit_save_position_name_label;

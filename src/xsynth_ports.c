@@ -60,12 +60,14 @@ struct xsynth_port_descriptor xsynth_port_description[XSYNTH_PORTS_COUNT] = {
     { PD_IN,  "EG1 Decay Rate",      HD_HI | HD_LOG,  0.00001f, 0.1f,   XPT_LOG,   0.1,10.,-4. },
     { PD_IN,  "EG1 Sustain Level",   HD_MID,          0.0f,     1.0f,   XPT_LIN,   0.,1.,0. },
     { PD_IN,  "EG1 Release Rate",    HD_HI | HD_LOG,  0.00001f, 0.1f,   XPT_LOG,   0.1,10.,-4. },
+    { PD_IN,  "EG1 Velocity Sens",   HD_MIN,          0.0f,     1.0f,   XPT_LIN,   0.,1.,0. },
     { PD_IN,  "EG1 Osc Pitch Mod",   HD_MIN,          0.0f,     1.0f,   XPT_LIN,   0.,1.,0. },
     { PD_IN,  "EG1 VCF Cutoff Mod",  HD_MIN,          0.0f,     50.0f,  XPT_LIN,   0.,50.,0. },
     { PD_IN,  "EG2 Attack Rate",     HD_HI | HD_LOG,  0.00001f, 0.1f,   XPT_LOG,   0.1,10.,-4. },
     { PD_IN,  "EG2 Decay Rate",      HD_HI | HD_LOG,  0.00001f, 0.1f,   XPT_LOG,   0.1,10.,-4. },
     { PD_IN,  "EG2 Sustain Level",   HD_MID,          0.0f,     1.0f,   XPT_LIN,   0.,1.,0. },
     { PD_IN,  "EG2 Release Rate",    HD_HI | HD_LOG,  0.00001f, 0.1f,   XPT_LOG,   0.1,10.,-4. },
+    { PD_IN,  "EG2 Velocity Sens",   HD_MIN,          0.0f,     1.0f,   XPT_LIN,   0.,1.,0. },
     { PD_IN,  "EG2 Osc Pitch Mod",   HD_MIN,          0.0f,     1.0f,   XPT_LIN,   0.,1.,0. },
     { PD_IN,  "EG2 VCF Cutoff Mod",  HD_MIN,          0.0f,     50.0f,  XPT_LIN,   0.,50.,0. },
     { PD_IN,  "VCF Cutoff",          HD_MAX,          0.0f,     50.0f,  XPT_LIN,   0.,50.,0. },
@@ -73,10 +75,7 @@ struct xsynth_port_descriptor xsynth_port_description[XSYNTH_PORTS_COUNT] = {
     { PD_IN,  "VCF Mode",            HD_DETENT,       0.0f,     2.0f,   XPT_VCF,   0.,0.,0. },
     { PD_IN,  "Glide Rate",          HD_MIN | HD_LOG, 0.002f,   1.0f,   XPT_LOG,   1.,0.002,1. },  // -FIX- this needs to be adjusted for different cx rates!
     { PD_IN,  "Volume",              HD_LOW,          0.0f,     1.0f,   XPT_LIN,   0.,1.,0. },
-    /* added in v0.1.1: */
-    { PD_IN,  "Tuning",              HD_440,          415.3f,   466.2f, XPT_LIN,   415.3,466.2,0. },
-    { PD_IN,  "EG1 Velocity Sens",   HD_MIN,          0.0f,     1.0f,   XPT_LIN,   0.,1.,0. },
-    { PD_IN,  "EG2 Velocity Sens",   HD_MIN,          0.0f,     1.0f,   XPT_LIN,   0.,1.,0. }
+    { PD_IN,  "Tuning",              HD_440,          415.3f,   466.2f, XPT_LIN,   415.3,466.2,0. }
 #undef PD_OUT
 #undef PD_IN
 #undef HD_MIN

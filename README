@@ -3,12 +3,6 @@
                     A software synthesizer plugin  for the
                         Disposable Soft Synth Interface
 
-Note
-====
-This is version 0.1.3 of Xsynth-DSSI.  A newer, better version
-exists. The only reason you will want to use this version is if you
-need compatibility with existing 0.1.x sessions.
-
 Introduction
 ============
 Xsynth-DSSI is a classic-analog (VCOs-VCF-VCA) style software
@@ -219,6 +213,16 @@ Monophonic Mode:
              retriggered at each note on, and upon note off when
              other keys are still held.
 
+Glide Mode:
+    'Legato Only' - portamento (a 'slide' in pitch between two
+             notes) is only used when a new note is played while
+             another is held.
+    'Non-legato Only' - portamento is only used for single
+             (staccato) notes, or the first note of a legato phrase.
+    'Always' - portamento is always used.
+    'Leftover' - like 'Always', but ... more difficult to predict.
+    'Off'  - disables portamento.
+
 Pitch Bend Range: Set the pitch bend range, from 0 to 12 semitones,
     for this instance of the plugin.
 
@@ -248,8 +252,9 @@ plus the value of the 'pitch' control.  Compared to a base pitch of
 '0', a value of '5' is one octave higher, and a value of '10' is two
 octaves higher.
 
-In any of the monophonic modes, the pitch from the MIDI key is
-lagged by the PORTAMENTO 'glide' value.
+The pitch from the MIDI key may be lagged by the PORTAMENTO 'glide'
+value, as determined by the glide mode and other keys in play (see
+above).
 
 The frequency of VCO2 is also affected by the 'pitch mod' amounts
 from EG1, EG2 and the LFO.
@@ -321,24 +326,29 @@ and waveform 6 (variable-slope triangular) is not available.
 
 MIDI Controller Mapping
 =======================
-Xsynth-DSSI tells the DSSI host to map MIDI volume controller #7 to
-the plugins 'volume' parameter.  This may be a bug, because it means
-that MIDI volume control and program changes interact in non-nice
-ways.
+For DSSI hosts that support MIDI controller mapping, Xsynth-DSSI
+requests that they map two MIDI controllers:
 
-MIDI modulation wheel controller #1 is not mapped, but interpreted
-by the plugin itself to reduce the VCF cutoff.
+- MIDI Control Change 5 "Portamento time" is mapped to the
+    PORTAMENTO 'glide' control, although in a somewhat backward way:
+    higher CC values map to shorter glide times, and lower CC values
+    to longer glide times.
 
-MIDI channel pressure and key pressure are combined by the plugin to
-boost the VCF resonance.
+- MIDI Control Change 8 "Balance" is mapped to the MIXER balance
+    control.
+
+Xsynth-DSSI itself interprets several other MIDI control messages:
+
+- MIDI Control Change 7 "Volume" controls the output level, without
+    affecting the VOLUME control.
+
+- MIDI Control Change 1 "Modulation wheel" reduces the VCF cutoff.
+
+- MIDI channel pressure and key pressure are combined to boost the
+    VCF resonance.
 
 Questions that might be frequently asked
 ========================================
-Q. Why doesn't the portamento (glide) work?
-A. Portamento only works in monophonic modes, and then only when one
-    note is held while another is played.  Switch to a monophonic
-    mode from the 'Configuration' tab of the GUI.
-
 Q. Woah! Where'd that nasty sound come from?
 A. A certain grittiness has always been part of Xsynth's charm for
     me, but if you're getting really nasty sound from a patch, check
@@ -365,8 +375,18 @@ A. A certain grittiness has always been part of Xsynth's charm for
         doesn't deal as well with waveforms having continuously
         varying slope.
 
-Q. Ack! Things crashed.  Did I lose my patch edits?
-A. Check in ~/.xsynth-dssi/ -- they may be saved there.
+Q. Help! I just installed Xsynth-DSSI 0.9.x, and now my sessions
+    that used the older Xsynth-DSSI 0.1.x don't sound right.  What
+    should I do?
+A. Xsynth-DSSI 0.1.3 is the last 0.1.x-compatible version, but it
+    does include the anti-aliased oscillators and MVCLPF-3 filter.
+    If you just want to use your existing sessions, you'll have to
+    use version 0.1.3. If you want to convert them to 0.9.x, you'll
+    need to save any custom patches or patch banks using a 0.1.x
+    version, then install 0.9.x, load the custom patches, then tweak
+    the mix and glide settings as needed.  (Note that the version
+    0.1.x default patch set is installed by later versions as
+    <prefix>/share/xsynth-dssi/version_0.1_patches.Xsynth)
 
 Q. Why aren't the GUI slider values and the corresponding LADSPA
     port values the same?

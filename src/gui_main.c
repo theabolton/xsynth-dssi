@@ -29,10 +29,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
-#include <glib.h>
 #include <gtk/gtk.h>
 #include <lo/lo.h>
  
@@ -57,13 +55,9 @@ char *     osc_quit_path;
 char *     osc_show_path;
 char *     osc_update_path;
 
-unsigned int    patch_count = 0;
-int             patches_dirty;
 xsynth_patch_t *patches = NULL;
-char            patches_tmp_filename[PATH_MAX];
+int             patch_section_dirty[4];
 char *          project_directory = NULL;
-
-int last_configure_load_was_from_tmp;
 
 int host_requested_quit = 0;
 
@@ -154,9 +148,10 @@ osc_configure_handler(const char *path, const char *types, lo_arg **argv,
     key   = &argv[0]->s;
     value = &argv[1]->s;
 
-    if (!strcmp(key, "load")) {
+    if (strlen(key) == 8 && !strncmp(key, "patches", 7) &&
+        key[7] >= '0' && key[7] <= '3') {
 
-        /* !FIX!  Dang, this is gonna be hard.... */
+        update_patches(key, value);
 
     } else if (!strcmp(key, "polyphony")) {
 
@@ -179,6 +174,16 @@ osc_configure_handler(const char *path, const char *types, lo_arg **argv,
         if (project_directory)
             free(project_directory);
         project_directory = strdup(value);
+
+    } else if (!strcmp(key, "load")) {
+
+        display_notice("Warning: your DSSI host sent an obsolete 'load' "
+                       "configure message with the filename shown below. This "
+                       "probably means you are trying to use a session "
+                       "created with Xsynth-DSSI version 0.1.x, which is not "
+                       "compatible with Xsynth-DSSI version 0.9 and later "
+                       "plugins. See the README file for more information.",
+                       value);
 
     } else {
 
@@ -225,7 +230,7 @@ osc_program_handler(const char *path, const char *types, lo_arg **argv,
     bank = argv[0]->i;
     program = argv[1]->i;
 
-    if (bank || program < 0 || program >= patch_count) {
+    if (bank || program < 0 || program >= 128) {
         GDB_MESSAGE(GDB_OSC, ": out-of-range program select (bank %d, program %d)\n", bank, program);
         return 0;
     }
@@ -253,45 +258,6 @@ update_request_timeout_callback(gpointer data)
     lo_send(osc_host_address, osc_update_path, "s", osc_self_url);
 
     return FALSE;  /* don't need to do this again */
-}
-
-/* ==== miscellaneous ==== */
-
-char *
-get_tmp_directory(void)
-{
-    gchar *filename;
-    struct stat buf;
-
-    filename = g_strconcat(g_get_home_dir(), "/.xsynth-dssi", NULL);
-    if (!stat(filename, &buf)) { /* file exists */
-        if (S_ISDIR(buf.st_mode)) {
-            return filename;
-        } else { /* it's there, but it's not a directory: bail */
-            g_free(filename);
-            return g_strdup("/tmp");
-        }
-    }
-    if (!mkdir(filename, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)) {
-        return filename;
-    }
-    /* couldn't create the directory; use /tmp */
-    g_free(filename);
-    return g_strdup("/tmp");
-}
-
-void
-create_patches_tmp_filename(const char *path)
-{
-    int i;
-    char *dir = get_tmp_directory();
-
-    snprintf(patches_tmp_filename, PATH_MAX, "%s/Xsynth_patches-%s", dir, path);
-    for (i = strlen(dir) + 1; i < strlen(patches_tmp_filename); i++) {
-        if (patches_tmp_filename[i] == '/')
-            patches_tmp_filename[i] = '_';
-    }
-    g_free(dir);
 }
 
 /* ==== main ==== */
@@ -366,9 +332,6 @@ main(int argc, char *argv[])
     /* default patches, temporary patchfile support */
     gui_data_friendly_patches();
     rebuild_patches_clist();
-    patches_dirty = 0;
-    last_configure_load_was_from_tmp = 0;
-    create_patches_tmp_filename(path);
 
     /* schedule our update request */
     update_request_timeout_tag = gtk_timeout_add(50,

@@ -117,16 +117,16 @@ xsynth_init_tables(void)
     /* volume to amplitude
      *
      * This generates a curve which is:
-     *  volume_to_amplitude_table[128 + 4] = 1.0       =   0dB
-     *  volume_to_amplitude_table[64 + 4]  = 0.316...  = -10dB
-     *  volume_to_amplitude_table[32 + 4]  = 0.1       = -20dB
-     *  volume_to_amplitude_table[16 + 4]  = 0.0316... = -30dB
+     *  volume_to_amplitude_table[128 + 4] = 0.25 * 3.16...   ~=  -2dB
+     *  volume_to_amplitude_table[64 + 4]  = 0.25 * 1.0       ~= -12dB
+     *  volume_to_amplitude_table[32 + 4]  = 0.25 * 0.316...  ~= -22dB
+     *  volume_to_amplitude_table[16 + 4]  = 0.25 * 0.1       ~= -32dB
      *   etc.
      */
     volume_exponent = 1.0f / (2.0f * log10f(2.0f));
     for (i = 0; i <= volume_to_amplitude_scale; i++) {
         volume = (float)i / (float)volume_to_amplitude_scale;
-        volume_to_amplitude_table[i + 4] = powf(volume, volume_exponent) * 2.0f;
+        volume_to_amplitude_table[i + 4] = powf(2.0f * volume, volume_exponent) / 4.0f;
     }
     volume_to_amplitude_table[ -1 + 4] = 0.0f;
     volume_to_amplitude_table[129 + 4] = volume_to_amplitude_table[128 + 4];
@@ -460,7 +460,7 @@ xsynth_voice_render(xsynth_synth_t *synth, xsynth_voice_t *voice,
     /* temporary variables used in calculating voice */
 
     float fund_pitch;
-    float deltat = 1.0f / (float)synth->sample_rate;
+    float deltat = synth->deltat;
     float freq, freqkey, freqeg1, freqeg2, lfo;
 
     /* set up synthesis variables from patch */
@@ -482,7 +482,7 @@ xsynth_voice_render(xsynth_synth_t *synth, xsynth_voice_t *voice,
     float         qres = *(synth->vcf_qres) / 1.995f * voice->pressure;  /* now 0 to 1 */
     float         balance1 = 1.0f - *(synth->osc_balance);
     float         balance2 = *(synth->osc_balance);
-    float         vol_out = volume(*(synth->volume));
+    float         vol_out = volume(*(synth->volume) * synth->cc_volume);
 
     fund_pitch = *(synth->glide_time) * voice->target_pitch +
                  (1.0f - *(synth->glide_time)) * voice->prev_pitch;    /* portamento */
@@ -511,7 +511,7 @@ xsynth_voice_render(xsynth_synth_t *synth, xsynth_voice_t *voice,
     eg1_amp *= 0.99f;  /* Xsynth's original eg phase 1 to 2 transition check was:  */
     eg2_amp *= 0.99f;  /*    if (!eg1_phase && eg1 > 0.99f) eg1_phase = 1;         */
 
-    freq = M_PI_F / (float)synth->sample_rate * fund_pitch * synth->mod_wheel;  /* now (0 to 1) * pi */
+    freq = M_PI_F * deltat * fund_pitch * synth->mod_wheel;  /* now (0 to 1) * pi */
     freqkey = freq * *(synth->vcf_cutoff);
     freqeg1 = freq * *(synth->eg1_amount_f);
     freqeg2 = freq * *(synth->eg2_amount_f);

@@ -292,3 +292,59 @@ vcf 15.347219 1.354874 1
 glide 0.984375
 volume 0.458111
 xsynth-dssi patch end
+# Xsynth-dssi patch
+xsynth-dssi patch format 0 begin
+name ----%20These%20are%20the%20patches
+osc1 1 2 0.5
+osc2 1.00628 2 0.5
+sync 0
+balance 0.5
+lfo 0.1 0 0 0
+eg1 0.013347 0.000198 0 0.000215 0 1e-06
+eg2 0.1 0.1 1 0.1 0 1e-06
+vcf 10.9326 1.39007 1
+glide 0.984375
+volume 0.509221
+xsynth-dssi patch end
+# Xsynth-dssi patch
+xsynth-dssi patch format 0 begin
+name ----%20distributed%20with%20v0.1%20of
+osc1 1 2 0.5
+osc2 1.00628 2 0.5
+sync 0
+balance 0.5
+lfo 0.1 0 0 0
+eg1 0.013347 0.000198 0 0.000215 0 1e-06
+eg2 0.1 0.1 1 0.1 0 1e-06
+vcf 10.9326 1.39007 1
+glide 0.984375
+volume 0.509221
+xsynth-dssi patch end
+# Xsynth-dssi patch
+xsynth-dssi patch format 0 begin
+name ----%20Xsynth-DSSI,%20in%20their
+osc1 1 2 0.5
+osc2 1.00628 2 0.5
+sync 0
+balance 0.5
+lfo 0.1 0 0 0
+eg1 0.013347 0.000198 0 0.000215 0 1e-06
+eg2 0.1 0.1 1 0.1 0 1e-06
+vcf 10.9326 1.39007 1
+glide 0.984375
+volume 0.509221
+xsynth-dssi patch end
+# Xsynth-dssi patch
+xsynth-dssi patch format 0 begin
+name ----%20original%20locations.
+osc1 1 2 0.5
+osc2 1.00628 2 0.5
+sync 0
+balance 0.5
+lfo 0.1 0 0 0
+eg1 0.013347 0.000198 0 0.000215 0 1e-06
+eg2 0.1 0.1 1 0.1 0 1e-06
+vcf 10.9326 1.39007 1
+glide 0.984375
+volume 0.509221
+xsynth-dssi patch end

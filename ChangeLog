@@ -1,3 +1,23 @@
+2004-12-25 version 0.9.0
+
+* abandoned version 0.1.x compatibility.
+* the patch bank is now sent between GUI and plugin as configure
+    information, rather than via a (sometimes temporary) file, which
+    retains the intuitive operation of the UI while avoiding the
+    synchronization, concurrency, and security issues of the old
+    method.  The plugin and GUI will both warn if a host sends
+    obsolete 'load' keys.
+* changed port order so host-provided UIs will be better organized.
+* MIDI CC 7 'volume' is no longer mapped to volume port, as this led
+    to nasty interactions between patch changes and volume changes.
+    CC7 is now handled internally by the plugin.
+* MIDI CCs 5 'portamento time' and 8 'balance' are now mapped to
+    their respective ports.
+* lowered output level, so it's not so blazingly hot.
+* implemented polyphonic glide.
+* updated patch set, saved version 0.1.x set in
+    extra/version_0.1_patches.Xsynth
+
 2004-12-25 version 0.1.3
 
 * added anti-aliased, minBLEP-based oscillators.

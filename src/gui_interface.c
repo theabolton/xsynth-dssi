@@ -47,6 +47,12 @@ GtkWidget *open_file_position_window;
 GtkObject *open_file_position_spin_adj;
 GtkWidget *open_file_position_name_label;
 
+GtkWidget *save_file_range_window;
+GtkObject *save_file_start_spin_adj;
+GtkWidget *save_file_start_name;
+GtkObject *save_file_end_spin_adj;
+GtkWidget *save_file_end_name;
+
 GtkWidget *edit_save_position_window;
 GtkObject *edit_save_position_spin_adj;
 GtkWidget *edit_save_position_name_label;
@@ -227,6 +233,10 @@ create_main_window (const char *tag)
   GtkWidget *optionmenu5_menu;
   GtkWidget *glide_mode_label;
   GtkWidget *glide_mode_legato;
+  GtkWidget *glide_mode_initial;
+  GtkWidget *glide_mode_always;
+  GtkWidget *glide_mode_leftover;
+  GtkWidget *glide_mode_off;
   GtkWidget *glide_menu;
   GtkWidget *bendrange_label;
   GtkWidget *bendrange;
@@ -978,6 +988,18 @@ create_main_window (const char *tag)
     glide_mode_legato = gtk_menu_item_new_with_label ("Legato Only");
     gtk_widget_show (glide_mode_legato);
     gtk_menu_append (GTK_MENU (glide_menu), glide_mode_legato);
+    glide_mode_initial = gtk_menu_item_new_with_label ("Non-legato Only");
+    gtk_widget_show (glide_mode_initial);
+    gtk_menu_append (GTK_MENU (glide_menu), glide_mode_initial);
+    glide_mode_always = gtk_menu_item_new_with_label ("Always");
+    gtk_widget_show (glide_mode_always);
+    gtk_menu_append (GTK_MENU (glide_menu), glide_mode_always);
+    glide_mode_leftover = gtk_menu_item_new_with_label ("Leftover");
+    gtk_widget_show (glide_mode_leftover);
+    gtk_menu_append (GTK_MENU (glide_menu), glide_mode_leftover);
+    glide_mode_off = gtk_menu_item_new_with_label ("Off");
+    gtk_widget_show (glide_mode_off);
+    gtk_menu_append (GTK_MENU (glide_menu), glide_mode_off);
     gtk_option_menu_set_menu (GTK_OPTION_MENU (glide_option_menu), glide_menu);
 
   bendrange_label = gtk_label_new ("Pitch Bend Range");
@@ -1273,6 +1295,18 @@ create_main_window (const char *tag)
     gtk_signal_connect (GTK_OBJECT (glide_mode_legato), "activate",
                         GTK_SIGNAL_FUNC (on_glide_mode_activate),
                         (gpointer)"legato");
+    gtk_signal_connect (GTK_OBJECT (glide_mode_initial), "activate",
+                        GTK_SIGNAL_FUNC (on_glide_mode_activate),
+                        (gpointer)"initial");
+    gtk_signal_connect (GTK_OBJECT (glide_mode_always), "activate",
+                        GTK_SIGNAL_FUNC (on_glide_mode_activate),
+                        (gpointer)"always");
+    gtk_signal_connect (GTK_OBJECT (glide_mode_leftover), "activate",
+                        GTK_SIGNAL_FUNC (on_glide_mode_activate),
+                        (gpointer)"leftover");
+    gtk_signal_connect (GTK_OBJECT (glide_mode_off), "activate",
+                        GTK_SIGNAL_FUNC (on_glide_mode_activate),
+                        (gpointer)"off");
     gtk_signal_connect (GTK_OBJECT (bendrange_adj), "value_changed",
                         GTK_SIGNAL_FUNC(on_bendrange_change),
                         NULL);
@@ -1603,6 +1637,170 @@ create_open_file_position_window (const char *tag)
 }
 
 void
+create_save_file_range_window (const char *tag)
+{
+    char      *title;
+    GtkWidget *vbox1;
+    GtkWidget *label4;
+    GtkWidget *table2;
+    GtkWidget *label5;
+    GtkWidget *label6;
+    GtkWidget *save_file_start_spin;
+    GtkWidget *save_file_end_spin;
+    GtkWidget *hseparator2;
+    GtkWidget *hbox3;
+    GtkWidget *save_file_range_cancel;
+    GtkWidget *save_file_range_ok;
+
+    save_file_range_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+    gtk_object_set_data (GTK_OBJECT (save_file_range_window), "save_file_range_window",
+                         save_file_range_window);
+    title = (char *)malloc(strlen(tag) + 12);
+    sprintf(title, "%s Save Range", tag);
+    gtk_window_set_title (GTK_WINDOW (save_file_range_window), title);
+    free(title);
+
+    vbox1 = gtk_vbox_new (FALSE, 0);
+    gtk_widget_ref (vbox1);
+    gtk_object_set_data_full (GTK_OBJECT (save_file_range_window), "vbox1", vbox1,
+                              (GtkDestroyNotify) gtk_widget_unref);
+    gtk_widget_show (vbox1);
+    gtk_container_add (GTK_CONTAINER (save_file_range_window), vbox1);
+    gtk_container_set_border_width (GTK_CONTAINER (vbox1), 6);
+
+    label4 = gtk_label_new ("Select the Program Numbers for the range of patches you wish to save:");
+    gtk_widget_ref (label4);
+    gtk_object_set_data_full (GTK_OBJECT (save_file_range_window), "label4", label4,
+                              (GtkDestroyNotify) gtk_widget_unref);
+    gtk_widget_show (label4);
+    gtk_box_pack_start (GTK_BOX (vbox1), label4, TRUE, TRUE, 0);
+    gtk_label_set_justify (GTK_LABEL (label4), GTK_JUSTIFY_FILL);
+    gtk_label_set_line_wrap (GTK_LABEL (label4), TRUE);
+    gtk_misc_set_padding (GTK_MISC (label4), 0, 6);
+
+    table2 = gtk_table_new (2, 3, FALSE);
+    gtk_widget_ref (table2);
+    gtk_object_set_data_full (GTK_OBJECT (save_file_range_window), "table2", table2,
+                              (GtkDestroyNotify) gtk_widget_unref);
+    gtk_widget_show (table2);
+    gtk_box_pack_start (GTK_BOX (vbox1), table2, TRUE, TRUE, 0);
+    gtk_container_set_border_width (GTK_CONTAINER (table2), 4);
+    gtk_table_set_col_spacings (GTK_TABLE (table2), 2);
+
+    label5 = gtk_label_new ("Start Program Number");
+    gtk_widget_ref (label5);
+    gtk_object_set_data_full (GTK_OBJECT (save_file_range_window), "label5", label5,
+                              (GtkDestroyNotify) gtk_widget_unref);
+    gtk_widget_show (label5);
+    gtk_table_attach (GTK_TABLE (table2), label5, 0, 1, 0, 1,
+                      (GtkAttachOptions) (GTK_FILL),
+                      (GtkAttachOptions) (0), 0, 0);
+    gtk_misc_set_alignment (GTK_MISC (label5), 0, 0.5);
+
+    label6 = gtk_label_new ("End Program (inclusive)");
+    gtk_widget_ref (label6);
+    gtk_object_set_data_full (GTK_OBJECT (save_file_range_window), "label6", label6,
+                              (GtkDestroyNotify) gtk_widget_unref);
+    gtk_widget_show (label6);
+    gtk_table_attach (GTK_TABLE (table2), label6, 0, 1, 1, 2,
+                      (GtkAttachOptions) (GTK_FILL),
+                      (GtkAttachOptions) (0), 0, 0);
+    gtk_misc_set_alignment (GTK_MISC (label6), 0, 0.5);
+
+    save_file_start_spin_adj = gtk_adjustment_new (0, 0, 127, 1, 10, 10);
+    save_file_start_spin = gtk_spin_button_new (GTK_ADJUSTMENT (save_file_start_spin_adj), 1, 0);
+    gtk_widget_ref (save_file_start_spin);
+    gtk_object_set_data_full (GTK_OBJECT (save_file_range_window), "save_file_start_spin", save_file_start_spin,
+                              (GtkDestroyNotify) gtk_widget_unref);
+    gtk_widget_show (save_file_start_spin);
+    gtk_table_attach (GTK_TABLE (table2), save_file_start_spin, 1, 2, 0, 1,
+                      (GtkAttachOptions) (0),
+                      (GtkAttachOptions) (0), 0, 0);
+    gtk_spin_button_set_numeric (GTK_SPIN_BUTTON (save_file_start_spin), TRUE);
+
+    save_file_end_spin_adj = gtk_adjustment_new (127, 0, 127, 1, 10, 10);
+    save_file_end_spin = gtk_spin_button_new (GTK_ADJUSTMENT (save_file_end_spin_adj), 1, 0);
+    gtk_widget_ref (save_file_end_spin);
+    gtk_object_set_data_full (GTK_OBJECT (save_file_range_window), "save_file_end_spin", save_file_end_spin,
+                              (GtkDestroyNotify) gtk_widget_unref);
+    gtk_widget_show (save_file_end_spin);
+    gtk_table_attach (GTK_TABLE (table2), save_file_end_spin, 1, 2, 1, 2,
+                      (GtkAttachOptions) (0),
+                      (GtkAttachOptions) (0), 0, 0);
+    gtk_spin_button_set_numeric (GTK_SPIN_BUTTON (save_file_end_spin), TRUE);
+
+    save_file_start_name = gtk_label_new ("(unset)");
+    gtk_widget_ref (save_file_start_name);
+    gtk_object_set_data_full (GTK_OBJECT (save_file_range_window), "save_file_start_name", save_file_start_name,
+                              (GtkDestroyNotify) gtk_widget_unref);
+    gtk_widget_show (save_file_start_name);
+    gtk_table_attach (GTK_TABLE (table2), save_file_start_name, 2, 3, 0, 1,
+                      (GtkAttachOptions) (GTK_FILL),
+                      (GtkAttachOptions) (0), 0, 0);
+    gtk_label_set_justify (GTK_LABEL (save_file_start_name), GTK_JUSTIFY_LEFT);
+    gtk_misc_set_alignment (GTK_MISC (save_file_start_name), 0, 0.5);
+
+    save_file_end_name = gtk_label_new ("(unset)");
+    gtk_widget_ref (save_file_end_name);
+    gtk_object_set_data_full (GTK_OBJECT (save_file_range_window), "save_file_end_name", save_file_end_name,
+                              (GtkDestroyNotify) gtk_widget_unref);
+    gtk_widget_show (save_file_end_name);
+    gtk_table_attach (GTK_TABLE (table2), save_file_end_name, 2, 3, 1, 2,
+                      (GtkAttachOptions) (GTK_FILL),
+                      (GtkAttachOptions) (0), 0, 0);
+    gtk_misc_set_alignment (GTK_MISC (save_file_end_name), 0, 0.5);
+
+    hseparator2 = gtk_hseparator_new ();
+    gtk_widget_ref (hseparator2);
+    gtk_object_set_data_full (GTK_OBJECT (save_file_range_window), "hseparator2", hseparator2,
+                              (GtkDestroyNotify) gtk_widget_unref);
+    gtk_widget_show (hseparator2);
+    gtk_box_pack_start (GTK_BOX (vbox1), hseparator2, FALSE, FALSE, 2);
+
+    hbox3 = gtk_hbox_new (FALSE, 0);
+    gtk_widget_ref (hbox3);
+    gtk_object_set_data_full (GTK_OBJECT (save_file_range_window), "hbox3", hbox3,
+                              (GtkDestroyNotify) gtk_widget_unref);
+    gtk_widget_show (hbox3);
+    gtk_box_pack_start (GTK_BOX (vbox1), hbox3, TRUE, TRUE, 0);
+    gtk_container_set_border_width (GTK_CONTAINER (hbox3), 6);
+
+    save_file_range_cancel = gtk_button_new_with_label ("Cancel");
+    gtk_widget_ref (save_file_range_cancel);
+    gtk_object_set_data_full (GTK_OBJECT (save_file_range_window),
+                              "save_file_range_cancel", save_file_range_cancel,
+                              (GtkDestroyNotify) gtk_widget_unref);
+    gtk_widget_show (save_file_range_cancel);
+    gtk_box_pack_start (GTK_BOX (hbox3), save_file_range_cancel, TRUE, FALSE, 12);
+
+    save_file_range_ok = gtk_button_new_with_label ("Save");
+    gtk_widget_ref (save_file_range_ok);
+    gtk_object_set_data_full (GTK_OBJECT (save_file_range_window),
+                              "save_file_range_ok", save_file_range_ok,
+                              (GtkDestroyNotify) gtk_widget_unref);
+    gtk_widget_show (save_file_range_ok);
+    gtk_box_pack_end (GTK_BOX (hbox3), save_file_range_ok, TRUE, FALSE, 12);
+
+    gtk_signal_connect (GTK_OBJECT (save_file_range_window), "destroy",
+                        GTK_SIGNAL_FUNC(gtk_main_quit), NULL);
+    gtk_signal_connect (GTK_OBJECT (save_file_range_window), "delete_event",
+                        GTK_SIGNAL_FUNC (on_delete_event_wrapper),
+                        (gpointer)on_save_file_range_cancel);
+    gtk_signal_connect (GTK_OBJECT (save_file_start_spin_adj),
+                        "value_changed", GTK_SIGNAL_FUNC(on_save_file_range_change),
+                        (gpointer)0);
+    gtk_signal_connect (GTK_OBJECT (save_file_end_spin_adj),
+                        "value_changed", GTK_SIGNAL_FUNC(on_save_file_range_change),
+                        (gpointer)1);
+    gtk_signal_connect (GTK_OBJECT (save_file_range_ok), "clicked",
+                        (GtkSignalFunc)on_save_file_range_ok,
+                        NULL);
+    gtk_signal_connect (GTK_OBJECT (save_file_range_cancel), "clicked",
+                        (GtkSignalFunc)on_save_file_range_cancel,
+                        NULL);
+}
+
+void
 create_edit_save_position_window (const char *tag)
 {
   char      *title;
@@ -1747,6 +1945,7 @@ create_windows(const char *instance_tag)
     create_open_file_selection(tag);
     create_save_file_selection(tag);
     create_open_file_position_window(tag);
+    create_save_file_range_window(tag);
     create_edit_save_position_window(tag);
     create_notice_window(tag);
 }

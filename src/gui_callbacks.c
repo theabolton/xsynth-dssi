@@ -67,6 +67,9 @@ static unsigned char test_note_velocity = 96;
 static gchar *file_selection_last_filename = NULL;
 extern char  *project_directory;
 
+static int save_file_start;
+static int save_file_end;
+
 #if !GTK_CHECK_VERSION(2, 0, 0)
 static int vcf_mode = 0;
 #endif
@@ -96,6 +99,7 @@ on_menu_open_activate                  (GtkMenuItem     *menuitem,
 {
     gtk_widget_hide(save_file_selection);
     gtk_widget_hide(open_file_position_window);
+    gtk_widget_hide(save_file_range_window);
     file_selection_set_path(open_file_selection);
     gtk_widget_show(open_file_selection);
 }
@@ -107,6 +111,7 @@ on_menu_save_activate                  (GtkMenuItem     *menuitem,
 {
     gtk_widget_hide(open_file_selection);
     gtk_widget_hide(open_file_position_window);
+    gtk_widget_hide(save_file_range_window);
     file_selection_set_path(save_file_selection);
     gtk_widget_show(save_file_selection);
 }
@@ -155,9 +160,7 @@ on_open_file_ok( GtkWidget *widget, gpointer data )
     GDB_MESSAGE(GDB_GUI, " on_open_file_ok: file '%s' selected\n",
                     file_selection_last_filename);
 
-    (GTK_ADJUSTMENT(open_file_position_spin_adj))->value = 0.0f;
-    (GTK_ADJUSTMENT(open_file_position_spin_adj))->upper =
-            (patch_count == 128 ? 127.0f : (float)patch_count);
+    /* update patch name */
     gtk_signal_emit_by_name (GTK_OBJECT (open_file_position_spin_adj), "value_changed");
 
     gtk_widget_show(open_file_position_window);
@@ -182,11 +185,7 @@ on_position_change(GtkWidget *widget, gpointer data)
     int position = lrintf(GTK_ADJUSTMENT(widget)->value);
     GtkWidget *label = (GtkWidget *)data;
 
-    if (position >= patch_count) {
-        gtk_label_set_text (GTK_LABEL (label), "(empty)");
-    } else {
-        gtk_label_set_text (GTK_LABEL (label), patches[position].name);
-    }
+    gtk_label_set_text (GTK_LABEL (label), patches[position].name);
 }
 
 void
@@ -204,33 +203,7 @@ on_open_file_position_ok( GtkWidget *widget, gpointer data )
         /* successfully loaded at least one patch */
         rebuild_patches_clist();
         display_notice("Load Patch File succeeded:", message);
-
-        if (patches_dirty) {
-
-            /* our patch bank is dirty, so we need to save a temporary copy
-             * for the plugin to load */
-            if (gui_data_save_dirty_patches_to_tmp()) {
-                lo_send(osc_host_address, osc_configure_path, "ss", "load",
-                        patches_tmp_filename);
-                last_configure_load_was_from_tmp = 1;
-            } else {
-                display_notice("Load Patch File error:", "couldn't save temporary bank to /tmp");
-            }
-            
-        } else {
-
-            /* patches is clean after the load, so tell the plugin to
-             * load the same file */
-
-            lo_send(osc_host_address, osc_configure_path, "ss", "load",
-                    file_selection_last_filename);
-
-            /* clean up old temporary file, if any */
-            if (last_configure_load_was_from_tmp) {
-                unlink(patches_tmp_filename);
-            }
-            last_configure_load_was_from_tmp = 0;
-        }
+        gui_data_send_dirty_patch_sections();
 
     } else {  /* didn't load anything successfully */
 
@@ -250,7 +223,7 @@ on_open_file_position_cancel( GtkWidget *widget, gpointer data )
 void
 on_save_file_ok( GtkWidget *widget, gpointer data )
 {
-    char *message;
+    int i;
 
     gtk_widget_hide(save_file_selection);
     file_selection_last_filename = (gchar *)gtk_file_selection_get_filename(
@@ -259,18 +232,67 @@ on_save_file_ok( GtkWidget *widget, gpointer data )
     GDB_MESSAGE(GDB_GUI, " on_save_file_ok: file '%s' selected\n",
                     file_selection_last_filename);
 
-    if (gui_data_save(file_selection_last_filename, &message)) {
+    /* find the last non-init-voice patch, and set the end position to it, then
+     * update the patch names */
+    for (i = 127;
+         i > 0 && gui_data_patch_compare(&patches[i], &xsynth_init_voice);
+         i--);
+    (GTK_ADJUSTMENT(save_file_end_spin_adj))->value = (float)i;
+    gtk_signal_emit_by_name (GTK_OBJECT (save_file_start_spin_adj), "value_changed");
+    gtk_signal_emit_by_name (GTK_OBJECT (save_file_end_spin_adj), "value_changed");
+
+    gtk_widget_show(save_file_range_window);
+}
+
+void
+on_save_file_cancel( GtkWidget *widget, gpointer data )
+{
+    GDB_MESSAGE(GDB_GUI, ": on_save_file_cancel called\n");
+    gtk_widget_hide(save_file_selection);
+}
+
+/*
+ * on_save_file_range_change
+ */
+void
+on_save_file_range_change(GtkWidget *widget, gpointer data)
+{
+    int which = (int)data;
+    int start = lrintf(GTK_ADJUSTMENT(save_file_start_spin_adj)->value);
+    int end   = lrintf(GTK_ADJUSTMENT(save_file_end_spin_adj)->value);
+
+    if (which == 0) {  /* start */
+        if (end < start) {
+            (GTK_ADJUSTMENT(save_file_end_spin_adj))->value = (float)start;
+            gtk_signal_emit_by_name (GTK_OBJECT (save_file_end_spin_adj), "value_changed");
+        }
+        gtk_label_set_text (GTK_LABEL (save_file_start_name), patches[start].name);
+    } else { /* end */
+        if (end < start) {
+            (GTK_ADJUSTMENT(save_file_start_spin_adj))->value = (float)end;
+            gtk_signal_emit_by_name (GTK_OBJECT (save_file_start_spin_adj), "value_changed");
+        }
+        gtk_label_set_text (GTK_LABEL (save_file_end_name), patches[end].name);
+    }
+}
+
+void
+on_save_file_range_ok( GtkWidget *widget, gpointer data )
+{
+    char *message;
+
+    save_file_start = lrintf(GTK_ADJUSTMENT(save_file_start_spin_adj)->value);
+    save_file_end   = lrintf(GTK_ADJUSTMENT(save_file_end_spin_adj)->value);
+
+    GDB_MESSAGE(GDB_GUI, " on_save_file_range_ok: start %d, end %d\n",
+                save_file_start, save_file_end);
+
+    gtk_widget_hide(save_file_range_window);
+
+    if (gui_data_save(file_selection_last_filename, save_file_start,
+                      save_file_end, &message)) {
 
         display_notice("Save Patch File succeeded:", message);
-
-        patches_dirty = 0;
-        lo_send(osc_host_address, osc_configure_path, "ss", "load",
-                file_selection_last_filename);
-        /* clean up old temporary file, if any */
-        if (last_configure_load_was_from_tmp) {
-            unlink(patches_tmp_filename);
-        }
-        last_configure_load_was_from_tmp = 0;
 
     } else {  /* problem with save */
 
@@ -281,10 +303,10 @@ on_save_file_ok( GtkWidget *widget, gpointer data )
 }
 
 void
-on_save_file_cancel( GtkWidget *widget, gpointer data )
+on_save_file_range_cancel( GtkWidget *widget, gpointer data )
 {
-    GDB_MESSAGE(GDB_GUI, ": on_save_file_cancel called\n");
-    gtk_widget_hide(save_file_selection);
+    GDB_MESSAGE(GDB_GUI, " on_save_file_range_cancel called\n");
+    gtk_widget_hide(save_file_range_window);
 }
 
 void
@@ -445,12 +467,17 @@ on_test_note_button_press(GtkWidget *widget, gpointer data)
 void
 on_edit_action_button_press(GtkWidget *widget, gpointer data)
 {
+    int i;
+
     GDB_MESSAGE(GDB_GUI, " on_edit_action_button_press: 'save changes' clicked\n");
 
-    (GTK_ADJUSTMENT(edit_save_position_spin_adj))->value = 
-            (patch_count == 128 ?   0.0f : (float)patch_count);
-    (GTK_ADJUSTMENT(edit_save_position_spin_adj))->upper =
-            (patch_count == 128 ? 127.0f : (float)patch_count);
+    /* find the last non-init-voice patch, and set the save position to the
+     * following patch */
+    for (i = 128;
+         i > 0 && gui_data_patch_compare(&patches[i - 1], &xsynth_init_voice);
+         i--);
+    if (i < 128)
+        (GTK_ADJUSTMENT(edit_save_position_spin_adj))->value = (float)i;
     gtk_signal_emit_by_name (GTK_OBJECT (edit_save_position_spin_adj), "value_changed");
 
     gtk_widget_show(edit_save_position_window);
@@ -467,19 +494,11 @@ on_edit_save_position_ok( GtkWidget *widget, gpointer data )
 
     /* set the patch to match all the edit widgets */
     update_patch_from_voice_widgets(&patches[position]);
-    patches_dirty = 1;
-    if (position == patch_count) patch_count++;
-    rebuild_patches_clist();
 
-    /* our patch bank is now dirty, so we need to save a temporary copy
-     * for the plugin to load */
-    if (gui_data_save_dirty_patches_to_tmp()) {
-        lo_send(osc_host_address, osc_configure_path, "ss", "load",
-                patches_tmp_filename);
-        last_configure_load_was_from_tmp = 1;
-    } else {
-        display_notice("Patch Edit Save Changes error:", "couldn't save temporary bank to /tmp");
-    }
+    gui_data_mark_dirty_patch_sections(position, position);
+    gui_data_send_dirty_patch_sections();
+
+    rebuild_patches_clist();
 }
 
 void
@@ -815,6 +834,29 @@ update_patch_from_voice_widgets(xsynth_patch_t *patch)
 }
 
 void
+update_patches(const char *key, const char *value)
+{
+    int section = key[7] - '0';
+
+    GDB_MESSAGE(GDB_OSC, ": update_patches: received new '%s'\n", key);
+
+    if (section < 0 || section > 3)
+        return;
+
+    if (!xsynth_data_decode_patches(value, &patches[section * 32])) {
+        GDB_MESSAGE(GDB_OSC, " update_patches: corrupt data!\n");
+        return;
+    }
+
+    patch_section_dirty[section] = 0;
+
+    rebuild_patches_clist();
+    /* internal_gui_update_only = 1;
+     * gtk_clist_select_row (GTK_CLIST(patches_clist), current_program, 0);
+     * internal_gui_update_only = 0; */
+}
+
+void
 update_polyphony(const char *value)
 {
     int poly = atoi(value);
@@ -865,6 +907,14 @@ update_glide(const char *value)
 
     if (!strcmp(value, "legato")) {
         index = 0;
+    } else if (!strcmp(value, "initial")) {
+        index = 1;
+    } else if (!strcmp(value, "always")) {
+        index = 2;
+    } else if (!strcmp(value, "leftover")) {
+        index = 3;
+    } else if (!strcmp(value, "off")) {
+        index = 4;
     } else {
         return;
     }
@@ -903,16 +953,10 @@ rebuild_patches_clist(void)
 
     gtk_clist_freeze(GTK_CLIST(patches_clist));
     gtk_clist_clear(GTK_CLIST(patches_clist));
-    if (patch_count == 0) {
-        strcpy(number, "0");
-        strcpy(name, "default voice");
+    for (i = 0; i < 128; i++) {
+        snprintf(number, 4, "%d", i);
+        strncpy(name, patches[i].name, 31);
         gtk_clist_append(GTK_CLIST(patches_clist), data);
-    } else {
-        for (i = 0; i < patch_count; i++) {
-            snprintf(number, 4, "%d", i);
-            strncpy(name, patches[i].name, 31);
-            gtk_clist_append(GTK_CLIST(patches_clist), data);
-        }
     }
 #if GTK_CHECK_VERSION(2, 0, 0)
     /* kick GTK+ 2.4.x in the pants.... */

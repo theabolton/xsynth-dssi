@@ -225,27 +225,11 @@ gui_data_write_patch(FILE *file, xsynth_patch_t *patch)
     return 1;  /* -FIX- error handling yet to be implemented */
 }
 
+/*
+ * gui_data_save
+ */
 int
-gui_data_save_dirty_patches_to_tmp(void)
-{
-    FILE *fh;
-    int i;
-
-    if ((fh = fopen(patches_tmp_filename, "wb")) == NULL) {
-        return 0;
-    }
-    for (i = 0; i < patch_count; i++) {
-        if (!gui_data_write_patch(fh, &patches[i])) {
-            fclose(fh);
-            return 0;
-        }
-    }
-    fclose(fh);
-    return 1;
-}
-
-int
-gui_data_save(char *filename, char **message)
+gui_data_save(char *filename, int start, int end, char **message)
 {
     FILE *fh;
     int i;
@@ -257,7 +241,7 @@ gui_data_save(char *filename, char **message)
         if (message) *message = strdup("could not open file for writing");
         return 0;
     }
-    for (i = 0; i < patch_count; i++) {
+    for (i = start; i <= end; i++) {
         if (!gui_data_write_patch(fh, &patches[i])) {
             fclose(fh);
             if (message) *message = strdup("error while writing file");
@@ -267,10 +251,24 @@ gui_data_save(char *filename, char **message)
     fclose(fh);
 
     if (message) {
-        snprintf(buffer, 20, "wrote %d patches", patch_count);
+        snprintf(buffer, 20, "wrote %d patches", end - start + 1);
         *message = strdup(buffer);
     }
     return 1;
+}
+
+/*
+ * gui_data_mark_dirty_patch_sections
+ */
+void
+gui_data_mark_dirty_patch_sections(int start_patch, int end_patch)
+{
+    int i, block;
+    for (i = start_patch; i <= end_patch; ) {
+        block = i >> 5;
+        patch_section_dirty[block] = 1;
+        i = (block + 1) << 5;
+    }
 }
 
 /*
@@ -285,13 +283,6 @@ gui_data_load(const char *filename, int position, char **message)
     char buffer[20];
 
     GDB_MESSAGE(GDB_IO, " gui_data_load: attempting to load '%s'\n", filename);
-
-    /* -FIX- implement bank support */
-    if (!patches) {
-        if (!(patches = (xsynth_patch_t *)malloc(128 * sizeof(xsynth_patch_t))))
-            if (message) *message = strdup("out of memory");
-            return 0;
-    }
 
     if ((fh = fopen(filename, "rb")) == NULL) {
         if (message) *message = strdup("could not open file for reading");
@@ -309,12 +300,7 @@ gui_data_load(const char *filename, int position, char **message)
         return 0;
     }
 
-    if (position == 0 && count >= patch_count)
-        patches_dirty = 0;
-    else
-        patches_dirty = 1;
-    if (index > patch_count)
-        patch_count = index;
+    gui_data_mark_dirty_patch_sections(position, position + count - 1);
 
     if (message) {
         snprintf(buffer, 20, "loaded %d patches", count);
@@ -331,13 +317,158 @@ gui_data_load(const char *filename, int position, char **message)
 void
 gui_data_friendly_patches(void)
 {
-    if (!patches) {
-        if (!(patches = (xsynth_patch_t *)malloc(128 * sizeof(xsynth_patch_t))))
-            return;
+    int i;
+
+    if (!(patches = (xsynth_patch_t *)malloc(128 * sizeof(xsynth_patch_t)))) {
+        GDB_MESSAGE(-1, " gui_data_friendly_patches fatal: out of memory!\n");
+        exit(1);
     }
 
     memcpy(patches, friendly_patches, friendly_patch_count * sizeof(xsynth_patch_t));
 
-    patch_count = friendly_patch_count;
+    for (i = friendly_patch_count; i < 128; i++) {
+        memcpy(&patches[i], &xsynth_init_voice, sizeof(xsynth_patch_t));
+    }
+
+    patch_section_dirty[0] = 0;
+    patch_section_dirty[1] = 0;
+    patch_section_dirty[2] = 0;
+    patch_section_dirty[3] = 0;
+}
+
+static void
+encode_patch(xsynth_patch_t *patch, unsigned char **ep, int maxlen)
+{
+    int i, n;
+
+    for (i = 0; maxlen > 3 && i < 30; i++) {
+        if (!patch->name[i]) {
+            break;
+        } else if (patch->name[i] < 33 || patch->name[i] > 126 ||
+                   patch->name[i] == '%') {
+            sprintf(*ep, "%%%02x", patch->name[i]);
+            *ep += 3;
+            maxlen -= 3;
+        } else {
+            **ep = patch->name[i];
+            (*ep)++;
+            maxlen--;
+        }
+    }
+
+    snprintf(*ep, maxlen,
+             " %.6g %d %.6g %.6g %d %.6g %d %.6g"   /* through osc balance */
+             " %.6g %d %.6g %.6g"                   /* through lfo */
+             " %.6g %.6g %.6g %.6g %.6g %.6g %.6g"  /* through eg1 */
+             " %.6g %.6g %.6g %.6g %.6g %.6g %.6g"  /* through eg2 */
+             " %.6g %.6g %d %.6g %.6g %n",
+             patch->osc1_pitch, patch->osc1_waveform, patch->osc1_pulsewidth,
+             patch->osc2_pitch, patch->osc2_waveform, patch->osc2_pulsewidth,
+             patch->osc_sync, patch->osc_balance,
+             patch->lfo_frequency, patch->lfo_waveform, patch->lfo_amount_o,
+             patch->lfo_amount_f,
+             patch->eg1_attack_time, patch->eg1_decay_time,
+             patch->eg1_sustain_level, patch->eg1_release_time,
+             patch->eg1_vel_sens, patch->eg1_amount_o, patch->eg1_amount_f,
+             patch->eg2_attack_time, patch->eg2_decay_time,
+             patch->eg2_sustain_level, patch->eg2_release_time,
+             patch->eg2_vel_sens, patch->eg2_amount_o, patch->eg2_amount_f,
+             patch->vcf_cutoff, patch->vcf_qres, patch->vcf_mode,
+             patch->glide_time, patch->volume, &n);
+
+    *ep += n;
+}
+
+static int
+send_patch_section(int section, xsynth_patch_t *block)
+{
+    int i;
+    unsigned char *e = (unsigned char *)malloc(16000);
+    unsigned char *ep = e,
+                  *ee = e + 16000;
+    char key[9];
+
+    if (!e) return 0;
+
+    sprintf(ep, "Xp0 ");
+    ep += 4;
+
+    for (i = 0; i < 32; i++)
+        encode_patch(&block[i], &ep, ee - ep);
+
+    if (ee - ep < 4) {  /* no room left (shouldn't happen) */
+        free(e);
+        return 0;
+    }
+    sprintf(ep, "end");
+
+    snprintf(key, 9, "patches%d", section);
+    lo_send(osc_host_address, osc_configure_path, "ss", key, e);
+
+    free(e);
+
+    return 1;
+}
+
+/*
+ * gui_data_send_dirty_patch_sections
+ */
+void
+gui_data_send_dirty_patch_sections(void)
+{
+    int section;
+    for (section = 0; section < 4; section++) {
+        if (patch_section_dirty[section] &&
+            send_patch_section(section, &patches[section << 5])) {
+            patch_section_dirty[section] = 0;
+        }
+    }
+}
+
+/*
+ * gui_data_patch_compare
+ *
+ * returns true if two patches are the same
+ */
+int
+gui_data_patch_compare(xsynth_patch_t *patch1, xsynth_patch_t *patch2)
+{
+    if (strcmp(patch1->name, patch2->name))
+        return 0;
+
+    if (patch1->osc1_pitch        != patch2->osc1_pitch        ||
+        patch1->osc1_waveform     != patch2->osc1_waveform     ||
+        patch1->osc1_pulsewidth   != patch2->osc1_pulsewidth   ||
+        patch1->osc2_pitch        != patch2->osc2_pitch        ||
+        patch1->osc2_waveform     != patch2->osc2_waveform     ||
+        patch1->osc2_pulsewidth   != patch2->osc2_pulsewidth   ||
+        patch1->osc_sync          != patch2->osc_sync          ||
+        patch1->osc_balance       != patch2->osc_balance       ||
+        patch1->lfo_frequency     != patch2->lfo_frequency     ||
+        patch1->lfo_waveform      != patch2->lfo_waveform      ||
+        patch1->lfo_amount_o      != patch2->lfo_amount_o      ||
+        patch1->lfo_amount_f      != patch2->lfo_amount_f      ||
+        patch1->eg1_attack_time   != patch2->eg1_attack_time   ||
+        patch1->eg1_decay_time    != patch2->eg1_decay_time    ||
+        patch1->eg1_sustain_level != patch2->eg1_sustain_level ||
+        patch1->eg1_release_time  != patch2->eg1_release_time  ||
+        patch1->eg1_vel_sens      != patch2->eg1_vel_sens      ||
+        patch1->eg1_amount_o      != patch2->eg1_amount_o      ||
+        patch1->eg1_amount_f      != patch2->eg1_amount_f      ||
+        patch1->eg2_attack_time   != patch2->eg2_attack_time   ||
+        patch1->eg2_decay_time    != patch2->eg2_decay_time    ||
+        patch1->eg2_sustain_level != patch2->eg2_sustain_level ||
+        patch1->eg2_release_time  != patch2->eg2_release_time  ||
+        patch1->eg2_vel_sens      != patch2->eg2_vel_sens      ||
+        patch1->eg2_amount_o      != patch2->eg2_amount_o      ||
+        patch1->eg2_amount_f      != patch2->eg2_amount_f      ||
+        patch1->vcf_cutoff        != patch2->vcf_cutoff        ||
+        patch1->vcf_qres          != patch2->vcf_qres          ||
+        patch1->vcf_mode          != patch2->vcf_mode          ||
+        patch1->glide_time        != patch2->glide_time        ||
+        patch1->volume            != patch2->volume)
+        return 0;
+
+    return 1;
 }
 

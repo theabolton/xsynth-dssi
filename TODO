@@ -1,29 +1,19 @@
 Needs to be done
 ================
 
-- implement osc_configure_handler() 'load'
+- clean up all '!FIX!'es and '-FIX-'es
 
-- clean up all '!FIX!'es
-
-- complete documention
-
-? GUI: add patch import (just set values, select Patch Edit tab)
-
-! interaction between MIDI volume controller and volume saved in
-    patch on program change is not pleasant
-
-Wish list
-=========
-
-? GUI: should Patch Edit Save Changes select the program number of
-    the saved-to patch?
+- render: implement ramping of modulators (volume, pitch bend, mod
+    wheel, pressure, ...)
 
 - render: fix resonance limiting so it doesn't blork at zero with
     high cutoffs
 
-- render: move envelope conditionals outside inner loop; implement
-    ramping of modulators (pitch bend, mod wheel, pressure, ...)
-
 - all: make modwheel->cutoff and pressure->resonance modulations
     configurable
+
+? GUI: should Patch Edit Save Changes select the program number of
+    the saved-to patch?
+
+? GUI: add patch import (just set values, select Patch Edit tab)
 

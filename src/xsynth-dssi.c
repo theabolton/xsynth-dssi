@@ -102,9 +102,15 @@ xsynth_instantiate(const LADSPA_Descriptor *descriptor, unsigned long sample_rat
             return NULL;
         }
     }
+    if (!(synth->patches = (xsynth_patch_t *)malloc(128 * sizeof(xsynth_patch_t)))) {
+        XDB_MESSAGE(-1, " xsynth_instantiate: out of memory!\n");
+        xsynth_cleanup(synth);
+        return NULL;
+    }
 
     /* do any per-instance one-time initialization here */
     synth->sample_rate = sample_rate;
+    synth->deltat = 1.0f / (float)synth->sample_rate;
     synth->polyphony = XSYNTH_DEFAULT_POLYPHONY;
     synth->voices = XSYNTH_DEFAULT_POLYPHONY;
     synth->monophonic = 0;
@@ -113,11 +119,8 @@ xsynth_instantiate(const LADSPA_Descriptor *descriptor, unsigned long sample_rat
     pthread_mutex_init(&synth->voicelist_mutex, NULL);
     synth->voicelist_mutex_grab_failed = 0;
     pthread_mutex_init(&synth->patches_mutex, NULL);
-    synth->patch_count = 0;
-    synth->patches = NULL;
     synth->pending_program_change = -1;
     synth->current_program = -1;
-    synth->project_dir = NULL;
     xsynth_data_friendly_patches(synth);
     xsynth_synth_init_controls(synth);
 
@@ -152,12 +155,14 @@ xsynth_connect_port(LADSPA_Handle instance, unsigned long port, LADSPA_Data *dat
       case XSYNTH_PORT_EG1_DECAY_TIME:     synth->eg1_decay_time    = data;  break;
       case XSYNTH_PORT_EG1_SUSTAIN_LEVEL:  synth->eg1_sustain_level = data;  break;
       case XSYNTH_PORT_EG1_RELEASE_TIME:   synth->eg1_release_time  = data;  break;
+      case XSYNTH_PORT_EG1_VEL_SENS:       synth->eg1_vel_sens      = data;  break;
       case XSYNTH_PORT_EG1_AMOUNT_O:       synth->eg1_amount_o      = data;  break;
       case XSYNTH_PORT_EG1_AMOUNT_F:       synth->eg1_amount_f      = data;  break;
       case XSYNTH_PORT_EG2_ATTACK_TIME:    synth->eg2_attack_time   = data;  break;
       case XSYNTH_PORT_EG2_DECAY_TIME:     synth->eg2_decay_time    = data;  break;
       case XSYNTH_PORT_EG2_SUSTAIN_LEVEL:  synth->eg2_sustain_level = data;  break;
       case XSYNTH_PORT_EG2_RELEASE_TIME:   synth->eg2_release_time  = data;  break;
+      case XSYNTH_PORT_EG2_VEL_SENS:       synth->eg2_vel_sens      = data;  break;
       case XSYNTH_PORT_EG2_AMOUNT_O:       synth->eg2_amount_o      = data;  break;
       case XSYNTH_PORT_EG2_AMOUNT_F:       synth->eg2_amount_f      = data;  break;
       case XSYNTH_PORT_VCF_CUTOFF:         synth->vcf_cutoff        = data;  break;
@@ -165,10 +170,7 @@ xsynth_connect_port(LADSPA_Handle instance, unsigned long port, LADSPA_Data *dat
       case XSYNTH_PORT_VCF_MODE:           synth->vcf_mode          = data;  break;
       case XSYNTH_PORT_GLIDE_TIME:         synth->glide_time        = data;  break;
       case XSYNTH_PORT_VOLUME:             synth->volume            = data;  break;
-      /* added in v0.1.1: */
       case XSYNTH_PORT_TUNING:             synth->tuning            = data;  break;
-      case XSYNTH_PORT_EG1_VEL_SENS:       synth->eg1_vel_sens      = data;  break;
-      case XSYNTH_PORT_EG2_VEL_SENS:       synth->eg2_vel_sens      = data;  break;
 
       default:
         break;
@@ -234,7 +236,6 @@ xsynth_cleanup(LADSPA_Handle instance)
     for (i = 0; i < XSYNTH_MAX_POLYPHONY; i++)
         if (synth->voice[i]) free(synth->voice[i]);
     if (synth->patches) free(synth->patches);
-    if (synth->project_dir) free(synth->project_dir);
     free(synth);
 }
 
@@ -265,9 +266,9 @@ xsynth_configure(LADSPA_Handle instance, const char *key, const char *value)
 {
     XDB_MESSAGE(XDB_DSSI, " xsynth_configure called with '%s' and '%s'\n", key, value);
 
-    if (!strcmp(key, "load")) {
+    if (strlen(key) == 8 && !strncmp(key, "patches", 7)) {
 
-        return xsynth_synth_handle_load((xsynth_synth_t *)instance, value);
+        return xsynth_synth_handle_patches((xsynth_synth_t *)instance, key, value);
 
     } else if (!strcmp(key, "polyphony")) {
 
@@ -287,7 +288,11 @@ xsynth_configure(LADSPA_Handle instance, const char *key, const char *value)
 
     } else if (!strcmp(key, DSSI_PROJECT_DIRECTORY_KEY)) {
 
-        return xsynth_synth_handle_project_dir((xsynth_synth_t *)instance, value);
+        return NULL; /* plugin has no use for project directory key, ignore it */
+
+    } else if (!strcmp(key, "load")) {
+
+        return dssi_configure_message("warning: host sent obsolete 'load' key with filename '%s'", value);
 
     }
     return strdup("error: unrecognized configure key");
@@ -305,13 +310,8 @@ xsynth_get_program(LADSPA_Handle instance, unsigned long index)
     static DSSI_Program_Descriptor pd;
 
     XDB_MESSAGE(XDB_DSSI, " xsynth_get_program called with %lu\n", index);
-    /* -FIX- no support for banks yet, so all patches are in bank 0 */
-    pd.Bank = 0;
-    pd.Program = 0;
-    pd.Name = "init voice";
-    if (!synth->patch_count)
-        return index ? NULL : &pd;
-    if (synth->patches && index < synth->patch_count) {
+
+    if (index < 128) {
         xsynth_synth_set_program_descriptor(synth, &pd, 0, index);
         return &pd;
     }
@@ -331,6 +331,10 @@ xsynth_select_program(LADSPA_Handle handle, unsigned long bank,
 
     XDB_MESSAGE(XDB_DSSI, " xsynth_select_program called with %lu and %lu\n", bank, program);
 
+    /* ignore invalid program requests */
+    if (bank || program >= 128)
+        return;
+    
     /* Attempt the patch mutex, return if lock fails. */
     if (pthread_mutex_trylock(&synth->patches_mutex)) {
         synth->pending_program_change = program;
@@ -368,8 +372,10 @@ xsynth_get_midi_controller(LADSPA_Handle instance, unsigned long port)
 {
     XDB_MESSAGE(XDB_DSSI, " xsynth_get_midi_controller called for port %lu\n", port);
     switch (port) {
-      case XSYNTH_PORT_VOLUME:
-        return DSSI_CC(7);
+      case XSYNTH_PORT_GLIDE_TIME:
+        return DSSI_CC(MIDI_CTL_MSB_PORTAMENTO_TIME);
+      case XSYNTH_PORT_OSC_BALANCE:
+        return DSSI_CC(MIDI_CTL_MSB_BALANCE);
       default:
         break;
     }

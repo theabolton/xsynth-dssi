@@ -21,16 +21,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
 #include "dssi.h"
 
 #include "xsynth_voice.h"
 
 xsynth_patch_t xsynth_init_voice = {
-    "- new voice -",
+    "  <-->",
     1.0f, 0, 0.5f,                            /* osc1 */
     1.0f, 0, 0.5f,                            /* osc2 */
     0,                                        /* sync */
@@ -58,13 +55,13 @@ is_comment(char *buf)  /* line is blank, whitespace, or first non-whitespace cha
 }
 
 static void
-parse_name(char *buf, char *name)
+parse_name(const char *buf, char *name, int *inlen)
 {
     int i = 0, o = 0;
     unsigned int t;
 
     while (buf[i] && o < 30) {
-        if (buf[i] < 32 || buf[i] > 126) {
+        if (buf[i] < 33 || buf[i] > 126) {
             break;
         } else if (buf[i] == '%') {
             if (buf[i + 1] && buf[i + 2] && sscanf(buf + i + 1, "%2x", &t) == 1) {
@@ -80,6 +77,8 @@ parse_name(char *buf, char *name)
     /* trim trailing spaces */
     while (o && name[o - 1] == ' ') o--;
     name[o] = '\0';
+
+    if (inlen) *inlen = i;
 }
 
 int
@@ -99,7 +98,7 @@ xsynth_data_read_patch(FILE *file, xsynth_patch_t *patch)
 
     if (!fgets(buf, 256, file)) return 0;
     if (sscanf(buf, " name %90s", buf2) != 1) return 0;
-    parse_name(buf2, tmp.name);
+    parse_name(buf2, tmp.name, NULL);
 
     if (!fgets(buf, 256, file)) return 0;
     if (sscanf(buf, " osc1 %f %d %f", &tmp.osc1_pitch, &i,
@@ -188,31 +187,84 @@ xsynth_data_read_patch(FILE *file, xsynth_patch_t *patch)
     return 1;  /* -FIX- error handling yet to be implemented */
 }
 
-char *
-xsynth_data_locate_patch_file(const char *origpath, const char *project_dir)
+int
+xsynth_data_decode_patches(const unsigned char *encoded, xsynth_patch_t *patches)
 {
-    struct stat statbuf;
-    char *path;
-    const char *filename;
+    int j, n, i0, i1, i2, i3;
+    const unsigned char *ep = encoded;
+    xsynth_patch_t *tmp, *pp;
 
-    if (stat(origpath, &statbuf) == 0)
-        return strdup(origpath);
-    else if (!project_dir)
-	return NULL;
+    if (strncmp(ep, "Xp0 ", 4)) {
+        /* fprintf(stderr, "bad header\n"); */
+        return 0;  /* bad format */
+    }
+    ep += 4;
+
+    tmp = (xsynth_patch_t *)malloc(32 * sizeof(xsynth_patch_t));
+    if (!tmp)
+        return 0;  /* out of memory */
     
-    filename = strrchr(origpath, '/');
-    
-    if (filename) ++filename;
-    else filename = origpath;
-    if (!*filename) return NULL;
-    
-    path = (char *)malloc(strlen(project_dir) + strlen(filename) + 2);
-    sprintf(path, "%s/%s", project_dir, filename);
-    
-    if (stat(path, &statbuf) == 0)
-        return path;
-    
-    free(path);
-    return NULL;
+    for (j = 0; j < 32; j++) {
+        pp = &tmp[j];
+
+        parse_name(ep, pp->name, &n);
+        if (!n) {
+            /* fprintf(stderr, "failed in name\n"); */
+            break;
+        }
+        ep += n;
+
+	if (sscanf(ep, " %f %d %f %f %d %f %d %f %f %d %f %f%n",
+                   &pp->osc1_pitch, &i0, &pp->osc1_pulsewidth,
+                   &pp->osc2_pitch, &i1, &pp->osc2_pulsewidth,
+                   &i2, &pp->osc_balance, &pp->lfo_frequency,
+                   &i3, &pp->lfo_amount_o, &pp->lfo_amount_f,
+                   &n) != 12) {
+            /* fprintf(stderr, "failed in oscs\n"); */
+            break;
+        }
+        pp->osc1_waveform = (unsigned char)i0;
+        pp->osc2_waveform = (unsigned char)i1;
+        pp->osc_sync = (unsigned char)i2;
+        pp->lfo_waveform = (unsigned char)i3;
+        ep += n;
+
+	if (sscanf(ep, " %f %f %f %f %f %f %f %f %f %f %f %f %f %f%n",
+                   &pp->eg1_attack_time, &pp->eg1_decay_time,
+                   &pp->eg1_sustain_level, &pp->eg1_release_time,
+                   &pp->eg1_vel_sens, &pp->eg1_amount_o, &pp->eg1_amount_f,
+                   &pp->eg2_attack_time, &pp->eg2_decay_time,
+                   &pp->eg2_sustain_level, &pp->eg2_release_time,
+                   &pp->eg2_vel_sens, &pp->eg2_amount_o, &pp->eg2_amount_f,
+                   &n) != 14) {
+            /* fprintf(stderr, "failed in egs\n"); */
+            break;
+        }
+        ep += n;
+
+	if (sscanf(ep, " %f %f %d %f %f%n",
+                   &pp->vcf_cutoff, &pp->vcf_qres, &i0,
+                   &pp->glide_time, &pp->volume,
+                   &n) != 5) {
+            /* fprintf(stderr, "failed in vcf+\n"); */
+            break;
+        }
+        pp->vcf_mode = (unsigned char)i0;
+        ep += n;
+
+        while (*ep == ' ') ep++;
+    }
+
+    if (j != 32 || strcmp(ep, "end")) {
+        /* fprintf(stderr, "decode failed, j = %d, *ep = 0x%02x\n", j, *ep); */
+        free(tmp);
+        return 0;  /* too few patches, or otherwise bad format */
+    }
+
+    memcpy(patches, tmp, 32 * sizeof(xsynth_patch_t));
+
+    free(tmp);
+
+    return 1;
 }
 

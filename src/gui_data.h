@@ -33,10 +33,12 @@
 void gui_data_import_patch(xsynth_patch_t *xsynth_patch,
                            unsigned char *old_patch, int unpack_name);
 int  gui_data_write_patch(FILE *file, xsynth_patch_t *patch);
-int  gui_data_save_dirty_patches_to_tmp(void);
-int  gui_data_save(char *filename, char **message);
+int  gui_data_save(char *filename, int start, int end, char **message);
+void gui_data_mark_dirty_patch_sections(int start_patch, int end_patch);
 int  gui_data_load(const char *filename, int position, char **message);
 void gui_data_friendly_patches(void);
+void gui_data_send_dirty_patch_sections(void);
+int  gui_data_patch_compare(xsynth_patch_t *patch1, xsynth_patch_t *patch2);
 
 /* gui_friendly_patches.c */
 extern int            friendly_patch_count;
@@ -46,8 +48,7 @@ extern xsynth_patch_t friendly_patches[];
 extern xsynth_patch_t xsynth_init_voice;
 
 int   xsynth_data_read_patch(FILE *file, xsynth_patch_t *patch);
-char *xsynth_data_locate_patch_file(const char *origpath,
-                                    const char *project_dir);
+int   xsynth_data_decode_patches(const char *encoded, xsynth_patch_t *patches);
 
 #endif /* _GUI_DATA_H */
 

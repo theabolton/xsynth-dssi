@@ -38,6 +38,9 @@ void on_open_file_position_ok(GtkWidget *widget, gpointer data);
 void on_open_file_position_cancel(GtkWidget *widget, gpointer data);
 void on_save_file_ok(GtkWidget *widget, gpointer data);
 void on_save_file_cancel(GtkWidget *widget, gpointer data);
+void on_save_file_range_change(GtkWidget *widget, gpointer data);
+void on_save_file_range_ok(GtkWidget *widget, gpointer data);
+void on_save_file_range_cancel(GtkWidget *widget, gpointer data);
 void on_about_dismiss(GtkWidget *widget, gpointer data);
 void on_notebook_switch_page(GtkNotebook *notebook, GtkNotebookPage *page,
                              guint page_num);
@@ -64,6 +67,7 @@ void update_voice_widget(int port, float value);
 void update_voice_widgets_from_patch(xsynth_patch_t *patch);
 void update_from_program_select(int bank, int program);
 void update_patch_from_voice_widgets(xsynth_patch_t *patch);
+void update_patches(const char *key, const char *value);
 void update_polyphony(const char *value);
 void update_monophonic(const char *value);
 void update_glide(const char *value);

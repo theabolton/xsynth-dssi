@@ -66,7 +66,7 @@ xsynth_synth_all_voices_off(xsynth_synth_t *synth)
 void
 xsynth_synth_note_off(xsynth_synth_t *synth, unsigned char key, unsigned char rvelocity)
 {
-    int i;
+    int i, count = 0;
     xsynth_voice_t *voice;
 
     for (i = 0; i < synth->voices; i++) {
@@ -75,8 +75,12 @@ xsynth_synth_note_off(xsynth_synth_t *synth, unsigned char key, unsigned char rv
                                 (_ON(voice) && (voice->key == key))) {
             XDB_MESSAGE(XDB_NOTE, " xsynth_synth_note_off: key %d rvel %d voice %d note id %d\n", key, rvelocity, i, voice->note_id);
             xsynth_voice_note_off(synth, voice, key, rvelocity);
+            count++;
         }
     }
+
+    if (!count)
+        xsynth_voice_remove_held_key(synth, key);
 }
 
 /*
@@ -286,7 +290,23 @@ xsynth_synth_damp_voices(xsynth_synth_t* synth)
 void
 xsynth_synth_update_wheel_mod(xsynth_synth_t* synth)
 {
-    synth->mod_wheel = 1.0f - (float)synth->cc[MIDI_CTL_MSB_MODWHEEL] / 127.0f;
+    synth->mod_wheel = 1.0f - (float)(synth->cc[MIDI_CTL_MSB_MODWHEEL] * 128 +
+                                      synth->cc[MIDI_CTL_LSB_MODWHEEL]) / 16256.0f;
+    if (synth->mod_wheel < 0.0f)
+        synth->mod_wheel = 0.0f;
+    /* don't need to check if any playing voices need updating, because it's global */
+}
+
+/*
+ * xsynth_synth_update_volume
+ */
+void
+xsynth_synth_update_volume(xsynth_synth_t* synth)
+{
+    synth->cc_volume = (float)(synth->cc[MIDI_CTL_MSB_MAIN_VOLUME] * 128 +
+                               synth->cc[MIDI_CTL_LSB_MAIN_VOLUME]) / 16256.0f;
+    if (synth->cc_volume > 1.0f)
+        synth->cc_volume = 1.0f;
     /* don't need to check if any playing voices need updating, because it's global */
 }
 
@@ -301,7 +321,13 @@ xsynth_synth_control_change(xsynth_synth_t *synth, unsigned int param, signed in
     switch (param) {
 
       case MIDI_CTL_MSB_MODWHEEL:
+      case MIDI_CTL_LSB_MODWHEEL:
         xsynth_synth_update_wheel_mod(synth);
+        break;
+
+      case MIDI_CTL_MSB_MAIN_VOLUME:
+      case MIDI_CTL_LSB_MAIN_VOLUME:
+        xsynth_synth_update_volume(synth);
         break;
 
       case MIDI_CTL_SUSTAIN:
@@ -394,11 +420,10 @@ xsynth_synth_init_controls(xsynth_synth_t *synth)
     synth->channel_pressure = 0;
     synth->pitch_wheel_sensitivity = 2;  /* two semi-tones */
     synth->pitch_wheel = 0;
-    /* we'd want to set volume (MSB 7 and LSB 39) if it wasn't mapped to a port */
-    /* synth->cc[7] = 127;  */
-    /* synth->cc[39] = 127; */
+    synth->cc[7] = 127;                  /* full volume */
 
     xsynth_synth_update_wheel_mod(synth);
+    xsynth_synth_update_volume(synth);
     xsynth_synth_pitch_bend(synth, 0);
 
     /* check if any playing voices need updating */
@@ -417,14 +442,9 @@ void
 xsynth_synth_select_program(xsynth_synth_t *synth, unsigned long bank,
                             unsigned long program)
 {
-    /* -FIX- no support for banks yet */
-    if (program >= 128) return;
+    if (bank || program >= 128) return;
     synth->current_program = program;
-    if (program >= synth->patch_count) {
-        xsynth_voice_set_ports(synth, &xsynth_init_voice);
-    } else {
-        xsynth_voice_set_ports(synth, &synth->patches[program]);
-    }
+    xsynth_voice_set_ports(synth, &synth->patches[program]);
 }
 
 /*
@@ -435,16 +455,15 @@ xsynth_synth_select_program(xsynth_synth_t *synth, unsigned long bank,
 void
 xsynth_data_friendly_patches(xsynth_synth_t *synth)
 {
-    if (!synth->patches) {
-        if (!(synth->patches = (xsynth_patch_t *)malloc(128 * sizeof(xsynth_patch_t))))
-            return;
-    }
+    int i;
 
     pthread_mutex_lock(&synth->patches_mutex);
 
     memcpy(synth->patches, friendly_patches, friendly_patch_count * sizeof(xsynth_patch_t));
 
-    synth->patch_count = friendly_patch_count;
+    for (i = friendly_patch_count; i < 128; i++) {
+        memcpy(&synth->patches[i], &xsynth_init_voice, sizeof(xsynth_patch_t));
+    }
 
     pthread_mutex_unlock(&synth->patches_mutex);
 }
@@ -457,8 +476,7 @@ xsynth_synth_set_program_descriptor(xsynth_synth_t *synth,
                                     DSSI_Program_Descriptor *pd,
                                     unsigned long bank, unsigned long program)
 {
-    /* -FIX- no support for banks yet */
-    if (program >= 128 || program >= synth->patch_count || !synth->patches) {
+    if (bank || program >= 128) {
         return 0;
     }
     pd->Bank = bank;
@@ -469,74 +487,30 @@ xsynth_synth_set_program_descriptor(xsynth_synth_t *synth,
 }
 
 /*
- * xsynth_synth_handle_load
+ * xsynth_synth_handle_patches
  */
 char *
-xsynth_synth_handle_load(xsynth_synth_t *synth, const char *value)
+xsynth_synth_handle_patches(xsynth_synth_t *synth, const char *key,
+                            const char *value)
 {
-    FILE *fh;
-    int count = 0;
-    char *file = 0;
+    int section;
 
-    XDB_MESSAGE(XDB_DATA, " xsynth_synth_handle_load: attempting to load '%s'\n", value);
+    XDB_MESSAGE(XDB_DATA, " xsynth_synth_handle_patches: received new '%s'\n", key);
 
-    if (!(file = xsynth_data_locate_patch_file(value, synth->project_dir))) {
-	return dssi_configure_message("load error: could not find file '%s'",
-				      value);
-    }
-
-    /* -FIX- implement bank support */
-    if (!synth->patches) {
-        if (!(synth->patches = (xsynth_patch_t *)malloc(128 * sizeof(xsynth_patch_t)))) {
-	    free(file);
-            return dssi_configure_message("load error: could not allocate memory for patch bank");
-	}
-    }
-
-    if ((fh = fopen(file, "rb")) == NULL) {
-	free(file);
-        return dssi_configure_message("load error: could not open file '%s'", value);
-    }
+    section = key[7] - '0';
+    if (section < 0 || section > 3)
+        return dssi_configure_message("patch configuration failed: invalid section '%c'", key[7]);
 
     pthread_mutex_lock(&synth->patches_mutex);
 
-    while (count < 128 &&
-           xsynth_data_read_patch(fh, &synth->patches[count]))
-        count++;
-    fclose(fh);
-
-    if (!count) {
+    if (!xsynth_data_decode_patches(value, &synth->patches[section * 32])) {
         pthread_mutex_unlock(&synth->patches_mutex);
-	free(file);
-        return dssi_configure_message("load error: no patches recognized in patch file '%s'", value);
+        return dssi_configure_message("patch configuration failed: corrupt data");
     }
-    if (count > synth->patch_count)
-        synth->patch_count = count;
 
     pthread_mutex_unlock(&synth->patches_mutex);
 
-    if (strcmp(file, value)) {
-	char *rv = dssi_configure_message
-	    ("warning: patch file '%s' not found, loaded '%s' instead",
-	     value, file);
-	free(file);
-	return rv;
-    } else {
-	free(file);
-	return NULL;
-    }
-}
-
-/*
- * xsynth_synth_handle_project_dir
- */
-char *
-xsynth_synth_handle_project_dir(xsynth_synth_t *synth, const char *value)
-{
-    if (synth->project_dir) free(synth->project_dir);
-    if (!value) synth->project_dir = 0;
-    else synth->project_dir = strdup(value);
-    return NULL;
+    return NULL; /* success */
 }
 
 /*
@@ -620,6 +594,10 @@ xsynth_synth_handle_glide(xsynth_synth_t *synth, const char *value)
     int mode = -1;
 
     if (!strcmp(value, "legato"))        mode = XSYNTH_GLIDE_MODE_LEGATO;
+    else if (!strcmp(value, "initial"))  mode = XSYNTH_GLIDE_MODE_INITIAL;
+    else if (!strcmp(value, "always"))   mode = XSYNTH_GLIDE_MODE_ALWAYS;
+    else if (!strcmp(value, "leftover")) mode = XSYNTH_GLIDE_MODE_LEFTOVER;
+    else if (!strcmp(value, "off"))      mode = XSYNTH_GLIDE_MODE_OFF;
 
     if (mode == -1) {
         return dssi_configure_message("error: glide value not recognized");
