@@ -71,8 +71,15 @@ xsynth_instantiate(const LADSPA_Descriptor *descriptor, unsigned long sample_rat
 
     /* do any per-instance one-time initialization here */
     synth->sample_rate = sample_rate;
+    synth->polyphony = XSYNTH_DEFAULT_POLYPHONY;
+    synth->voices = XSYNTH_DEFAULT_POLYPHONY;
+    synth->monophonic = 0;
     synth->patch_count = 0;
     synth->patches = NULL;
+    synth->current_program = -1;
+    xsynth_data_friendly_patches(synth);
+    xsynth_synth_init_controls(synth);
+    xsynth_synth_select_program(synth, 0, 0); /* initialize the ports */
 
     return (LADSPA_Handle)synth;
 }
@@ -140,15 +147,7 @@ xsynth_activate(LADSPA_Handle instance)
 
     synth->nugget_remains = 0;
     synth->note_id = 0;
-    synth->monophonic = 0;
-    synth->current_program = -1;
-    synth->polyphony = XSYNTH_DEFAULT_POLYPHONY;
-    synth->voices = XSYNTH_MAX_POLYPHONY;
     xsynth_synth_all_voices_off(synth);
-    synth->voices = XSYNTH_DEFAULT_POLYPHONY;
-    xsynth_data_friendly_patches(synth);
-    xsynth_synth_init_controls(synth);
-    xsynth_synth_select_program(synth, 0, 0); /* initialize the ports */
 }
 
 /*
@@ -179,11 +178,6 @@ xsynth_deactivate(LADSPA_Handle instance)
     xsynth_synth_t *synth = (xsynth_synth_t *)instance;
 
     xsynth_synth_all_voices_off(synth);  /* stop all sounds immediately */
-    synth->patch_count = 0;
-    if (synth->patches) {
-       free(synth->patches);
-       synth->patches = NULL;
-    }
 }
 
 /*
