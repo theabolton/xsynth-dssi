@@ -79,7 +79,7 @@ xsynth_instantiate(const LADSPA_Descriptor *descriptor, unsigned long sample_rat
     synth->current_program = -1;
     xsynth_data_friendly_patches(synth);
     xsynth_synth_init_controls(synth);
-    xsynth_synth_select_program(synth, 0, 0); /* initialize the ports */
+//    xsynth_synth_select_program(synth, 0, 0); /* initialize the ports */
 
     return (LADSPA_Handle)synth;
 }
@@ -193,7 +193,11 @@ xsynth_cleanup(LADSPA_Handle instance)
 
     for (i = 0; i < XSYNTH_MAX_POLYPHONY; i++)
         if (synth->voice[i]) free(synth->voice[i]);
-    if (synth->patches) free(synth->patches);
+    fprintf(stderr, "XSYNTH CLEANUP: instance is %p, patches %p\n", instance, synth->patches);
+    if (synth->patches) {
+	free(synth->patches);
+    }
+
     free(synth);
 }
 
@@ -235,6 +239,10 @@ xsynth_configure(LADSPA_Handle instance, const char *key, const char *value)
     } else if (!strcmp(key, "polyphony")) {
 
         return xsynth_synth_handle_polyphony((xsynth_synth_t *)instance, value);
+
+    } else if (!strcmp(key, DSSI_PROJECT_DIRECTORY_KEY)) {
+
+        return xsynth_synth_handle_project_dir((xsynth_synth_t *)instance, value);
 
     }
     return strdup("error: unrecognized configure key");
@@ -398,6 +406,7 @@ xsynth_run_synth(LADSPA_Handle instance, unsigned long sample_count,
 #if defined(XSYNTH_DEBUG) && (XSYNTH_DEBUG & XDB_AUDIO)
 *synth->output += 0.10f; /* add a 'buzz' to output so there's something audible even when quiescent */
 #endif /* defined(XSYNTH_DEBUG) && (XSYNTH_DEBUG & XDB_AUDIO) */
+
 }
 
 // optional:

@@ -133,6 +133,7 @@ int   xsynth_synth_set_program_descriptor(xsynth_synth_t *synth,
 char *xsynth_synth_handle_load(xsynth_synth_t *synth, const char *value);
 char *xsynth_synth_handle_monophonic(xsynth_synth_t *synth, const char *value);
 char *xsynth_synth_handle_polyphony(xsynth_synth_t *synth, const char *value);
+char *xsynth_synth_handle_project_dir(xsynth_synth_t *synth, const char *value);
 void  xsynth_synth_render_voices(xsynth_synth_t *synth, LADSPA_Data *out,
                                  unsigned long sample_count,
                                  int do_control_update);

@@ -30,6 +30,10 @@
 #include <string.h>
 #include <math.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include <ladspa.h>
 
 #include "xsynth.h"
@@ -463,6 +467,36 @@ xsynth_synth_set_program_descriptor(xsynth_synth_t *synth,
 
 }
 
+static char *project_dir = 0;
+
+static char *
+locate_patch_file(const char *origpath)
+{
+    struct stat statbuf;
+    char *path;
+    const char *filename;
+
+    if (stat(origpath, &statbuf) == 0)
+        return strdup(origpath);
+    else if (!project_dir)
+	return NULL;
+    
+    filename = strrchr(origpath, '/');
+    
+    if (filename) ++filename;
+    else filename = origpath;
+    if (!*filename) return NULL;
+    
+    path = (char *)malloc(strlen(project_dir) + strlen(filename) + 2);
+    sprintf(path, "%s/%s", project_dir, filename);
+    
+    if (stat(path, &statbuf) == 0)
+        return path;
+    
+    free(path);
+    return NULL;
+}
+
 /*
  * xsynth_synth_handle_load
  */
@@ -471,15 +505,25 @@ xsynth_synth_handle_load(xsynth_synth_t *synth, const char *value)
 {
     FILE *fh;
     int count = 0;
+    char *file = 0;
 
     XDB_MESSAGE(XDB_DATA, " xsynth_synth_handle_load: attempting to load '%s'\n", value);
-    /* -FIX- implement bank support */
-    if (!synth->patches) {
-        if (!(synth->patches = (xsynth_patch_t *)malloc(128 * sizeof(xsynth_patch_t))))
-            return dssi_configure_message("load error: could not allocate memory for patch bank");
+
+    if (!(file = locate_patch_file(value))) {
+	return dssi_configure_message("load error: could not find file '%s'",
+				      value);
     }
 
-    if ((fh = fopen(value, "rb")) == NULL) {
+    /* -FIX- implement bank support */
+    if (!synth->patches) {
+        if (!(synth->patches = (xsynth_patch_t *)malloc(128 * sizeof(xsynth_patch_t)))) {
+	    free(file);
+            return dssi_configure_message("load error: could not allocate memory for patch bank");
+	}
+    }
+
+    if ((fh = fopen(file, "rb")) == NULL) {
+	free(file);
         return dssi_configure_message("load error: could not open file '%s'", value);
     }
     while (count < 128 &&
@@ -488,11 +532,30 @@ xsynth_synth_handle_load(xsynth_synth_t *synth, const char *value)
     fclose(fh);
 
     if (!count) {
+	free(file);
         return dssi_configure_message("load error: no patches recognized in patch file '%s'", value);
     }
     if (count > synth->patch_count)
         synth->patch_count = count;
+    
+    if (strcmp(file, value)) {
+	char *rv = dssi_configure_message
+	    ("warning: patch file '%s' not found, loaded '%s' instead",
+	     value, file);
+	free(file);
+	return rv;
+    } else {
+	free(file);
+	return NULL;
+    }
+}
 
+char *
+xsynth_synth_handle_project_dir(xsynth_synth_t *synth, const char *value)
+{
+    if (project_dir) free(project_dir);
+    if (!value) project_dir = 0;
+    else project_dir = strdup(value);
     return NULL;
 }
 
