@@ -44,10 +44,10 @@ struct xsynth_port_descriptor xsynth_port_description[XSYNTH_PORTS_COUNT] = {
 #define XPT_ONOFF  XSYNTH_PORT_TYPE_ONOFF
     { PD_OUT, "Output",              0,               0.0f,     0.0f,   0,         0.,0.,0. },
     { PD_IN,  "OSC1 Pitch",          HD_MAX | HD_LOG, 1.0f,     4.0f,   XPT_LOG,   1.,2.,2. },
-    { PD_IN,  "OSC1 Waveform",       HD_DETENT,       0.0f,     5.0f,   XPT_DETE,  0.,0.,0. },
+    { PD_IN,  "OSC1 Waveform",       HD_DETENT,       0.0f,     6.0f,   XPT_DETE,  0.,0.,0. },
     { PD_IN,  "OSC1 Pulse Width",    HD_MID,          0.0f,     1.0f,   XPT_LIN,   0.,1.,0. },
     { PD_IN,  "OSC2 Pitch",          HD_MAX | HD_LOG, 1.0f,     4.0f,   XPT_LOG,   1.,2.,2. },
-    { PD_IN,  "OSC2 Waveform",       HD_DETENT,       0.0f,     5.0f,   XPT_DETE,  0.,0.,0. },
+    { PD_IN,  "OSC2 Waveform",       HD_DETENT,       0.0f,     6.0f,   XPT_DETE,  0.,0.,0. },
     { PD_IN,  "OSC2 Pulse Width",    HD_MID,          0.0f,     1.0f,   XPT_LIN,   0.,1.,0. },
     { PD_IN,  "Oscillator Sync",     HD_SWITCH,       0.0f,     1.0f,   XPT_ONOFF, 0.,0.,0. },
     { PD_IN,  "Oscillator Balance",  HD_MIN,          0.0f,     1.0f,   XPT_LIN,   0.,1.,0. },
@@ -68,7 +68,7 @@ struct xsynth_port_descriptor xsynth_port_description[XSYNTH_PORTS_COUNT] = {
     { PD_IN,  "EG2 Osc Pitch Mod",   HD_MIN,          0.0f,     1.0f,   XPT_LIN,   0.,1.,0. },
     { PD_IN,  "EG2 VCF Cutoff Mod",  HD_MIN,          0.0f,     50.0f,  XPT_LIN,   0.,50.,0. },
     { PD_IN,  "VCF Cutoff",          HD_MAX,          0.0f,     50.0f,  XPT_LIN,   0.,50.,0. },
-    { PD_IN,  "VCF Resonance",       HD_MIN,          0.0f,     1.995f, XPT_LIN,   0.,1.995,0. },
+    { PD_IN,  "VCF Resonance",       HD_LOW,          0.0f,     1.995f, XPT_LIN,   0.,1.995,0. },
     { PD_IN,  "VCF dB/oct 12 or 24", HD_SWITCH,       0.0f,     1.0f,   XPT_ONOFF, 0.,0.,0. },
     { PD_IN,  "Glide Rate",          HD_MIN | HD_LOG, 0.002f,   1.0f,   XPT_LOG,   1.,0.002,1. },  // -FIX- this needs to be adjusted for different cx rates!
     { PD_IN,  "Volume",              HD_LOW,          0.0f,     1.0f,   XPT_LIN,   0.,1.,0. },

@@ -13,7 +13,7 @@
  * PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public
- * License along with this library; if not, write to the Free
+ * License along with this program; if not, write to the Free
  * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307, USA.
  */
@@ -29,6 +29,26 @@
 #include "bitmap_about.xbm"
 
 #include "bitmap_logo.xbm"
+
+#include "bitmap_waveform0.xpm"
+#include "bitmap_waveform1.xpm"
+#include "bitmap_waveform2.xpm"
+#include "bitmap_waveform3.xpm"
+#include "bitmap_waveform4.xpm"
+#include "bitmap_waveform5.xpm"
+#include "bitmap_waveform6.xpm"
+
+static char **waveform_xpms[7] = {
+    waveform0_xpm,
+    waveform1_xpm,
+    waveform2_xpm,
+    waveform3_xpm,
+    waveform4_xpm,
+    waveform5_xpm,
+    waveform6_xpm
+};
+
+static GdkPixmap *waveform_pixmaps[7];
 
 /* This is a dummy pixmap we use when a pixmap can't be found. */
 static char *dummy_pixmap_xpm[] = {
@@ -117,5 +137,58 @@ create_logo_pixmap(GtkWidget *window)
                                                      bitmap_logo_bits,
                                                      bitmap_logo_width,
                                                      bitmap_logo_height);
+}
+
+void
+create_waveform_gdk_pixmaps(GtkWidget *widget)
+{
+    GdkColormap *colormap;
+    GdkPixmap *gdkpixmap;
+    int i;
+
+    colormap = gtk_widget_get_colormap (widget);
+    for (i = 0; i <= 6; i++)
+        waveform_pixmaps[i] = NULL;
+
+    for (i = 0; i <= 6; i++) {
+        gdkpixmap = gdk_pixmap_colormap_create_from_xpm_d (NULL, colormap, NULL,
+                                                           NULL, waveform_xpms[i]);
+        if (gdkpixmap == NULL) {
+            g_warning ("Error creating waveform pixmap %d", i);
+            gdkpixmap = gdk_pixmap_colormap_create_from_xpm_d (NULL, colormap, NULL,
+                                                               NULL, dummy_pixmap_xpm);
+        }
+        if (gdkpixmap == NULL) {
+            g_error ("Couldn't create replacement pixmap.");
+        }
+        waveform_pixmaps[i] = gdkpixmap;
+    }
+}
+
+void
+free_waveform_gdk_pixmaps(void)
+{
+    int i;
+    for (i = 0; i <= 6; i++) {
+        if (waveform_pixmaps[i] != NULL)
+            gdk_pixmap_unref (waveform_pixmaps[i]);
+        waveform_pixmaps[i] = NULL;
+    }
+}
+
+GtkWidget *
+create_waveform_pixmap(GtkWidget *widget)
+{
+    GtkWidget *pixmap;
+
+    pixmap = gtk_pixmap_new (waveform_pixmaps[0], NULL);
+    return pixmap;
+}
+
+void
+set_waveform_pixmap(GtkWidget *widget, int waveform)
+{
+    if (waveform >=0 && waveform <= 6)
+        gtk_pixmap_set(GTK_PIXMAP(widget), waveform_pixmaps[waveform], NULL);
 }
 

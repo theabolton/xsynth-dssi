@@ -30,10 +30,6 @@
 #include <string.h>
 #include <math.h>
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
 #include <ladspa.h>
 
 #include "xsynth.h"
@@ -467,36 +463,6 @@ xsynth_synth_set_program_descriptor(xsynth_synth_t *synth,
 
 }
 
-static char *project_dir = 0;
-
-static char *
-locate_patch_file(const char *origpath)
-{
-    struct stat statbuf;
-    char *path;
-    const char *filename;
-
-    if (stat(origpath, &statbuf) == 0)
-        return strdup(origpath);
-    else if (!project_dir)
-	return NULL;
-    
-    filename = strrchr(origpath, '/');
-    
-    if (filename) ++filename;
-    else filename = origpath;
-    if (!*filename) return NULL;
-    
-    path = (char *)malloc(strlen(project_dir) + strlen(filename) + 2);
-    sprintf(path, "%s/%s", project_dir, filename);
-    
-    if (stat(path, &statbuf) == 0)
-        return path;
-    
-    free(path);
-    return NULL;
-}
-
 /*
  * xsynth_synth_handle_load
  */
@@ -509,7 +475,7 @@ xsynth_synth_handle_load(xsynth_synth_t *synth, const char *value)
 
     XDB_MESSAGE(XDB_DATA, " xsynth_synth_handle_load: attempting to load '%s'\n", value);
 
-    if (!(file = locate_patch_file(value))) {
+    if (!(file = xsynth_data_locate_patch_file(value, synth->project_dir))) {
 	return dssi_configure_message("load error: could not find file '%s'",
 				      value);
     }
@@ -537,7 +503,7 @@ xsynth_synth_handle_load(xsynth_synth_t *synth, const char *value)
     }
     if (count > synth->patch_count)
         synth->patch_count = count;
-    
+
     if (strcmp(file, value)) {
 	char *rv = dssi_configure_message
 	    ("warning: patch file '%s' not found, loaded '%s' instead",
@@ -550,12 +516,15 @@ xsynth_synth_handle_load(xsynth_synth_t *synth, const char *value)
     }
 }
 
+/*
+ * xsynth_synth_handle_project_dir
+ */
 char *
 xsynth_synth_handle_project_dir(xsynth_synth_t *synth, const char *value)
 {
-    if (project_dir) free(project_dir);
-    if (!value) project_dir = 0;
-    else project_dir = strdup(value);
+    if (synth->project_dir) free(synth->project_dir);
+    if (!value) synth->project_dir = 0;
+    else synth->project_dir = strdup(value);
     return NULL;
 }
 

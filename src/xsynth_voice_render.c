@@ -202,6 +202,12 @@ oscillator(float *pos, float omega, float deltat,
 
       case 5:                                                   /* pulse wave */
         return ((*pos < pw) ? 1.0f : -1.0f);
+
+      case 6:                                 /* variable-slope triangle wave */
+        if (*pos < pw)
+            return -1.0f + (*pos / pw) * 2.0f;
+        else
+            return 1.0f - ((*pos - pw) / (1.0f - pw)) * 2.0f;
     }
 }
 

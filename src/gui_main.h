@@ -46,6 +46,7 @@ extern unsigned int    patch_count;
 extern int             patches_dirty;
 extern xsynth_patch_t *patches;
 extern char            patches_tmp_filename[];
+extern char           *project_directory;
 
 extern int last_configure_load_was_from_tmp;
 

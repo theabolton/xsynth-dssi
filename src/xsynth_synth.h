@@ -61,6 +61,7 @@ struct _xsynth_synth_t {
     xsynth_patch_t *patches;
     // int          current_bank;
     int             current_program;
+    char           *project_dir;
 
     /* current non-LADSPA-port-mapped controller values */
     unsigned char   key_pressure[128];

@@ -43,6 +43,7 @@
 #include "xsynth_voice.h"
 #include "gui_main.h"
 #include "gui_callbacks.h"
+#include "gui_images.h"
 #include "gui_interface.h"
 #include "gui_data.h"
 
@@ -64,6 +65,26 @@ static unsigned char test_note_noteoff_key;
 static unsigned char test_note_velocity = 96;
 
 static gchar *file_selection_last_filename = NULL;
+extern char  *project_directory;
+
+void
+file_selection_set_path(GtkWidget *file_selection)
+{
+    if (file_selection_last_filename) {
+        gtk_file_selection_set_filename(GTK_FILE_SELECTION(file_selection),
+                                        file_selection_last_filename);
+    } else if (project_directory && strlen(project_directory)) {
+        if (project_directory[strlen(project_directory) - 1] != '/') {
+            char buffer[PATH_MAX];
+            snprintf(buffer, PATH_MAX, "%s/", project_directory);
+            gtk_file_selection_set_filename(GTK_FILE_SELECTION(file_selection),
+                                            buffer);
+        } else {
+            gtk_file_selection_set_filename(GTK_FILE_SELECTION(file_selection),
+                                            project_directory);
+        }
+    }
+}
 
 void
 on_menu_open_activate                  (GtkMenuItem     *menuitem,
@@ -71,9 +92,7 @@ on_menu_open_activate                  (GtkMenuItem     *menuitem,
 {
     gtk_widget_hide(save_file_selection);
     gtk_widget_hide(open_file_position_window);
-    if (file_selection_last_filename)
-        gtk_file_selection_set_filename(GTK_FILE_SELECTION(open_file_selection),
-                                        file_selection_last_filename);
+    file_selection_set_path(open_file_selection);
     gtk_widget_show(open_file_selection);
 }
 
@@ -84,9 +103,7 @@ on_menu_save_activate                  (GtkMenuItem     *menuitem,
 {
     gtk_widget_hide(open_file_selection);
     gtk_widget_hide(open_file_position_window);
-    if (file_selection_last_filename)
-        gtk_file_selection_set_filename(GTK_FILE_SELECTION(save_file_selection),
-                                        file_selection_last_filename);
+    file_selection_set_path(save_file_selection);
     gtk_widget_show(save_file_selection);
 }
 
@@ -278,13 +295,6 @@ on_notebook_switch_page(GtkNotebook     *notebook,
                         guint            page_num)
 {
     GDB_MESSAGE(GDB_GUI, " on_notebook_switch_page: page %d selected\n", page_num);
-// gtk_notebook_get_current_page( GtkNotebook *notebook );
-
-//     if (page_num == 1) {
-//         gtk_widget_show(patch_edit_table);  // blinking
-//     } else {
-//         gtk_widget_hide(patch_edit_table);  // blinking: doesn't work because the whole tab disappears!
-//     }
 }
 
 void
@@ -415,30 +425,18 @@ on_test_note_button_press(GtkWidget *widget, gpointer data)
     }
 }
 
-// !FIX! split this into two functions
 void
 on_edit_action_button_press(GtkWidget *widget, gpointer data)
 {
-    int save_changes = (int)data;
+    GDB_MESSAGE(GDB_GUI, " on_edit_action_button_press: 'save changes' clicked\n");
 
-    if (save_changes) {
-        
-        GDB_MESSAGE(GDB_GUI, " on_edit_action_button_press: 'save changes' clicked\n");
+    (GTK_ADJUSTMENT(edit_save_position_spin_adj))->value = 
+            (patch_count == 128 ?   0.0f : (float)patch_count);
+    (GTK_ADJUSTMENT(edit_save_position_spin_adj))->upper =
+            (patch_count == 128 ? 127.0f : (float)patch_count);
+    gtk_signal_emit_by_name (GTK_OBJECT (edit_save_position_spin_adj), "value_changed");
 
-        (GTK_ADJUSTMENT(edit_save_position_spin_adj))->value = 
-                (patch_count == 128 ?   0.0f : (float)patch_count);
-        (GTK_ADJUSTMENT(edit_save_position_spin_adj))->upper =
-                (patch_count == 128 ? 127.0f : (float)patch_count);
-        gtk_signal_emit_by_name (GTK_OBJECT (edit_save_position_spin_adj), "value_changed");
-
-        gtk_widget_show(edit_save_position_window);
-
-    } else {  /* discard changes */
-
-        GDB_MESSAGE(GDB_GUI, " on_edit_action_button_press: 'discard changes' clicked\n");
-        /* !FIX! implement */
-
-    }
+    gtk_widget_show(edit_save_position_window);
 }
 
 void
@@ -533,29 +531,17 @@ on_notice_dismiss( GtkWidget *widget, gpointer data )
 void
 update_detent_label(int index, int value)
 {
-    char *waveform;
-
-    switch (value) {
-      default:
-      case 0:  waveform = "sine";          break;
-      case 1:  waveform = "triangle";      break;
-      case 2:  waveform = "sawtooth up";   break;
-      case 3:  waveform = "sawtooth down"; break;
-      case 4:  waveform = "square";        break;
-      case 5:  waveform = "pulse";         break;
-    }
-
     switch (index) {
       case XSYNTH_PORT_OSC1_WAVEFORM:
-        gtk_label_set_text (GTK_LABEL (osc1_waveform_label), waveform);
+        set_waveform_pixmap(osc1_waveform_pixmap, value);
         break;
 
       case XSYNTH_PORT_OSC2_WAVEFORM:
-        gtk_label_set_text (GTK_LABEL (osc2_waveform_label), waveform);
+        set_waveform_pixmap(osc2_waveform_pixmap, value);
         break;
 
       case XSYNTH_PORT_LFO_WAVEFORM:
-        gtk_label_set_text (GTK_LABEL (lfo_waveform_label), waveform);
+        set_waveform_pixmap(lfo_waveform_pixmap, value);
         break;
 
       default:
@@ -576,6 +562,7 @@ update_voice_widget(int port, float value)
         return;
     }
     if (port == XSYNTH_PORT_TUNING)
+        // !FIX! handle tuning specially!
         return;  // !FIX!
 
     xpd = &xsynth_port_description[port];
@@ -584,7 +571,6 @@ update_voice_widget(int port, float value)
     else if (value > xpd->upper_bound)
         value = xpd->upper_bound;
     
-    /* while (gtk_main_iteration(FALSE)); ? */
     internal_gui_update_only = 1;
 
     switch (xpd->type) {
@@ -625,25 +611,16 @@ update_voice_widget(int port, float value)
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), dval); /* causes call to on_voice_onoff_toggled callback */
         break;
 
-        // !FIX! handle tuning specially!
-      // if (port == XSYNTH_PORT_TUNING)
-      //  ....
-
       default:
         break;
     }
 
-    /* gdk_flush(); ? */
-    /* while (gtk_main_iteration(FALSE)); ? */
     internal_gui_update_only = 0;
 }
 
 void
 update_voice_widgets_from_patch(xsynth_patch_t *patch)
 {
-    // gtk_widget_hide(patch_edit_table);  // blinking: no, makes it worse
-    // gtk_clist_freeze(GTK_CLIST(patches_clist));  // blinking: no effect
-    // gtk_widget_hide(notebook1);  // blinking: bad, but best so far
     update_voice_widget(XSYNTH_PORT_OSC1_PITCH,        patch->osc1_pitch);
     update_voice_widget(XSYNTH_PORT_OSC1_WAVEFORM,     (float)patch->osc1_waveform);
     update_voice_widget(XSYNTH_PORT_OSC1_PULSEWIDTH,   patch->osc1_pulsewidth);
@@ -676,9 +653,6 @@ update_voice_widgets_from_patch(xsynth_patch_t *patch)
     update_voice_widget(XSYNTH_PORT_GLIDE_TIME,        patch->glide_time);
     update_voice_widget(XSYNTH_PORT_VOLUME,            patch->volume);
     gtk_entry_set_text(GTK_ENTRY(name_entry), patch->name);
-    // gtk_widget_show(notebook1);
-    // gtk_clist_thaw(GTK_CLIST(patches_clist));
-    // gtk_widget_show(patch_edit_table);
 }
 
 void

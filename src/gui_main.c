@@ -61,6 +61,7 @@ unsigned int    patch_count = 0;
 int             patches_dirty;
 xsynth_patch_t *patches = NULL;
 char            patches_tmp_filename[PATH_MAX];
+char *          project_directory = NULL;
 
 int last_configure_load_was_from_tmp;
 
@@ -143,7 +144,43 @@ int
 osc_configure_handler(const char *path, const char *types, lo_arg **argv,
                   int argc, lo_message msg, void *user_data)
 {
-    return osc_debug_handler(path, types, argv, argc, msg, user_data); /* !FIX! */
+    char *key, *value;
+
+    if (argc < 2) {
+        GDB_MESSAGE(GDB_OSC, " error: too few arguments to osc_configure_handler\n");
+        return 1;
+    }
+
+    key   = &argv[0]->s;
+    value = &argv[1]->s;
+
+    if (!strcmp(key, "load")) {
+
+        /* !FIX!  Dang, this is gonna be hard.... */
+
+    } else if (!strcmp(key, "monophonic")) {
+
+        update_monophonic(value);
+
+    } else if (!strcmp(key, "polyphony")) {
+
+        update_polyphony(value);
+
+#ifdef DSSI_PROJECT_DIRECTORY_KEY
+    } else if (!strcmp(key, DSSI_PROJECT_DIRECTORY_KEY)) {
+
+        if (project_directory)
+            free(project_directory);
+        project_directory = strdup(value);
+
+#endif
+    } else {
+
+        return osc_debug_handler(path, types, argv, argc, msg, user_data);
+
+    }
+
+    return 0;
 }
 
 int
@@ -349,6 +386,7 @@ main(int argc, char *argv[])
 
     /* clean up patches */
     if (patches) free(patches);
+    if (project_directory) free(project_directory);
 
     /* clean up OSC support */
     lo_server_free(osc_server);

@@ -13,7 +13,7 @@
  * PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public
- * License along with this library; if not, write to the Free
+ * License along with this program; if not, write to the Free
  * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307, USA.
  */
@@ -30,5 +30,10 @@
 /* gui_images.c */
 GtkWidget *create_about_pixmap(GtkWidget *window);
 GtkWidget *create_logo_pixmap(GtkWidget *window);
+
+void       create_waveform_gdk_pixmaps(GtkWidget *widget);
+void       free_waveform_gdk_pixmaps(void);
+GtkWidget* create_waveform_pixmap(GtkWidget *widget);
+void       set_waveform_pixmap(GtkWidget *widget, int waveform);
 
 #endif /* _GUI_IMAGES_H */

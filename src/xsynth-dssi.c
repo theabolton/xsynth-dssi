@@ -77,9 +77,9 @@ xsynth_instantiate(const LADSPA_Descriptor *descriptor, unsigned long sample_rat
     synth->patch_count = 0;
     synth->patches = NULL;
     synth->current_program = -1;
+    synth->project_dir = NULL;
     xsynth_data_friendly_patches(synth);
     xsynth_synth_init_controls(synth);
-//    xsynth_synth_select_program(synth, 0, 0); /* initialize the ports */
 
     return (LADSPA_Handle)synth;
 }
@@ -193,11 +193,8 @@ xsynth_cleanup(LADSPA_Handle instance)
 
     for (i = 0; i < XSYNTH_MAX_POLYPHONY; i++)
         if (synth->voice[i]) free(synth->voice[i]);
-    fprintf(stderr, "XSYNTH CLEANUP: instance is %p, patches %p\n", instance, synth->patches);
-    if (synth->patches) {
-	free(synth->patches);
-    }
-
+    if (synth->patches) free(synth->patches);
+    if (synth->project_dir) free(synth->project_dir);
     free(synth);
 }
 
@@ -406,7 +403,6 @@ xsynth_run_synth(LADSPA_Handle instance, unsigned long sample_count,
 #if defined(XSYNTH_DEBUG) && (XSYNTH_DEBUG & XDB_AUDIO)
 *synth->output += 0.10f; /* add a 'buzz' to output so there's something audible even when quiescent */
 #endif /* defined(XSYNTH_DEBUG) && (XSYNTH_DEBUG & XDB_AUDIO) */
-
 }
 
 // optional:

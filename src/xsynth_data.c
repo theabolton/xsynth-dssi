@@ -18,8 +18,12 @@
  * MA 02111-1307, USA.
  */
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "dssi.h"
 
@@ -183,5 +187,33 @@ xsynth_data_read_patch(FILE *file, xsynth_patch_t *patch, unsigned long bank,
     memcpy(patch, &tmp, sizeof(xsynth_patch_t));
 
     return 1;  /* -FIX- error handling yet to be implemented */
+}
+
+char *
+xsynth_data_locate_patch_file(const char *origpath, const char *project_dir)
+{
+    struct stat statbuf;
+    char *path;
+    const char *filename;
+
+    if (stat(origpath, &statbuf) == 0)
+        return strdup(origpath);
+    else if (!project_dir)
+	return NULL;
+    
+    filename = strrchr(origpath, '/');
+    
+    if (filename) ++filename;
+    else filename = origpath;
+    if (!*filename) return NULL;
+    
+    path = (char *)malloc(strlen(project_dir) + strlen(filename) + 2);
+    sprintf(path, "%s/%s", project_dir, filename);
+    
+    if (stat(path, &statbuf) == 0)
+        return path;
+    
+    free(path);
+    return NULL;
 }
 

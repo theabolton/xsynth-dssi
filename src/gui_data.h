@@ -13,7 +13,7 @@
  * PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public
- * License along with this library; if not, write to the Free
+ * License along with this program; if not, write to the Free
  * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307, USA.
  */
@@ -46,8 +46,10 @@ extern xsynth_patch_t friendly_patches[13];
 /* xsynth_data.c */
 extern xsynth_patch_t xsynth_init_voice;
 
-int  xsynth_data_read_patch(FILE *file, xsynth_patch_t *patch,
-                            unsigned long bank, unsigned long program);
+int   xsynth_data_read_patch(FILE *file, xsynth_patch_t *patch,
+                             unsigned long bank, unsigned long program);
+char *xsynth_data_locate_patch_file(const char *origpath,
+                                    const char *project_dir);
 
 #endif /* _GUI_DATA_H */
 

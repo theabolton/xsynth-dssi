@@ -61,6 +61,8 @@ void update_voice_widget(int port, float value);
 void update_voice_widgets_from_patch(xsynth_patch_t *patch);
 void update_from_program_select(int bank, int program);
 void update_patch_from_voice_widgets(xsynth_patch_t *patch);
+void update_monophonic(const char *value);
+void update_polyphony(const char *value);
 void rebuild_patches_clist(void);
 
 #endif  /* _GUI_CALLBACKS_H */
