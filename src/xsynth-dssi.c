@@ -20,7 +20,7 @@
  * PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public
- * License along with this library; if not, write to the Free
+ * License along with this program; if not, write to the Free
  * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307, USA.
  */
@@ -118,6 +118,10 @@ xsynth_connect_port(LADSPA_Handle instance, unsigned long port, LADSPA_Data *dat
       case XSYNTH_PORT_VCF_4POLE:          synth->vcf_4pole         = data;  break;
       case XSYNTH_PORT_GLIDE_TIME:         synth->glide_time        = data;  break;
       case XSYNTH_PORT_VOLUME:             synth->volume            = data;  break;
+      /* added in v0.2: */
+      case XSYNTH_PORT_TUNING:             synth->tuning            = data;  break;
+      case XSYNTH_PORT_EG1_VEL_SENS:       synth->eg1_vel_sens      = data;  break;
+      case XSYNTH_PORT_EG2_VEL_SENS:       synth->eg2_vel_sens      = data;  break;
 
       default:
         break;
@@ -439,9 +443,7 @@ void _init()
 
     XSYNTH_DEBUG_INIT("xsynth-dssi.so");
 
-    xsynth_init_waveforms();
-    xsynth_pitch_init();
-    xsynth_volume_init();
+    xsynth_init_tables();
 
     xsynth_LADSPA_descriptor =
         (LADSPA_Descriptor *) malloc(sizeof(LADSPA_Descriptor));

@@ -16,7 +16,7 @@
  * PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public
- * License along with this library; if not, write to the Free
+ * License along with this program; if not, write to the Free
  * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307, USA.
  */
@@ -56,8 +56,12 @@
 #define XSYNTH_PORT_VCF_4POLE          27
 #define XSYNTH_PORT_GLIDE_TIME         28
 #define XSYNTH_PORT_VOLUME             29
+/* added in v0.2: */
+#define XSYNTH_PORT_TUNING             30
+#define XSYNTH_PORT_EG1_VEL_SENS       31
+#define XSYNTH_PORT_EG2_VEL_SENS       32
 
-#define XSYNTH_PORTS_COUNT  30
+#define XSYNTH_PORTS_COUNT  33
 
 #define XSYNTH_PORT_TYPE_LINEAR       0
 #define XSYNTH_PORT_TYPE_LOGARITHMIC  1

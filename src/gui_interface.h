@@ -13,7 +13,7 @@
  * PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public
- * License along with this library; if not, write to the Free
+ * License along with this program; if not, write to the Free
  * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307, USA.
  */
@@ -26,7 +26,9 @@
 extern GtkWidget *main_window;
 extern GtkWidget *open_file_selection;
 extern GtkWidget *save_file_selection;
+
 extern GtkWidget *about_window;
+extern GtkWidget *about_label;
 
 extern GtkWidget *open_file_position_window;
 extern GtkObject *open_file_position_spin_adj;
@@ -47,6 +49,9 @@ extern GtkWidget *osc2_waveform_label;
 extern GtkWidget *lfo_waveform_label;
 
 extern GtkWidget *name_entry;
+
+extern GtkWidget *monophonic_option_menu;
+extern GtkObject *polyphony_adj;
 
 extern GtkObject *voice_widget[];
 

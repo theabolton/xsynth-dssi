@@ -1,7 +1,9 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(configure.in)
-AM_INIT_AUTOMAKE(xsynth-dssi, 0.1.0)
+AC_INIT(Xsynth-DSSI, 0.1.1, musound-at-jps-dot-net)
+
+AC_CONFIG_SRCDIR(src/xsynth-dssi.c)
+AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER(config.h)
 
 AC_ISC_POSIX
@@ -17,36 +19,41 @@ AC_PROG_LIBTOOL
 
 AC_C_BIGENDIAN
 
-AM_PATH_GTK(1.2.0, ,
-            AC_MSG_ERROR(Cannot find GTK: Is gtk-config in path?))
+dnl Check for GTK+ and PHAT
+AC_ARG_WITH(gtk2, AC_HELP_STRING([--with-gtk2], [use GTK+ 2.0]),
+            [ if test $withval = "yes"; then try_gtk2=yes ;
+              else try_gtk2=no ; fi ], try_gtk2=yes)
+AC_ARG_WITH(phat, AC_HELP_STRING([--with-phat], [use the PHAT GTK+ widget library]),
+            [ if test $withval = "yes"; then try_phat=yes ;
+              else try_phat=no ; fi ], try_phat=yes)
+with_gtk=no
+with_phat=no
+dnl First look for GTK+ 2.x, unless '--without-gtk2' was specified.
+if test "x${try_gtk2}" = 'xyes'; then
+    AM_PATH_GTK_2_0(2.0.0, with_gtk='yes (version 2.0)', with_gtk=no)
+    if test "x${with_gtk}" != 'xno' -a "x${try_phat}" = 'xyes'; then
+        PKG_CHECK_MODULES(PHAT, phat, with_phat=yes, with_phat=no)
+        if test "x${with_phat}" = 'xyes'; then
+            AC_DEFINE(HAVE_PHAT, 1, [Define this if you have the PHAT GTK+ widget library.])
+            GTK_CFLAGS="$GTK_CFLAGS $PHAT_CFLAGS"
+            GTK_LIBS="$GTK_LIBS $PHAT_LIBS"
+        fi
+    fi
+fi
+dnl  No GTK+ 2.x found, look for GTK+ 1.2 instead
+if test "x${with_gtk}" = 'xno'; then
+    AM_PATH_GTK(1.2.0, with_gtk='yes (version 1.2)', AC_MSG_ERROR([error: no version of GTK+ found]))
+fi
+echo "GTK support: $with_gtk"
+echo "PHAT support: $with_phat"
 
-dnl This was in acconfig.h:
-dnl #undef ENABLE_NLS
-dnl #undef HAVE_CATGETS
-dnl #undef HAVE_GETTEXT
-dnl #undef HAVE_LC_MESSAGES
-dnl #undef HAVE_STPCPY
-dnl #undef HAVE_LIBSM
-dnl #undef PACKAGE_LOCALE_DIR
-dnl #undef PACKAGE_DATA_DIR
-dnl #undef PACKAGE_SOURCE_DIR
-
-dnl dnl Set PACKAGE_DATA_DIR in config.h.
-dnl if test "x${datadir}" = 'x${prefix}/share'; then
-dnl   if test "x${prefix}" = "xNONE"; then
-dnl     AC_DEFINE_UNQUOTED(PACKAGE_DATA_DIR, "${ac_default_prefix}/share/${PACKAGE}")
-dnl   else
-dnl     AC_DEFINE_UNQUOTED(PACKAGE_DATA_DIR, "${prefix}/share/${PACKAGE}")
-dnl   fi
-dnl else
-dnl   AC_DEFINE_UNQUOTED(PACKAGE_DATA_DIR, "${datadir}/${PACKAGE}")
-dnl fi
-
-dnl dnl Set PACKAGE_SOURCE_DIR in config.h.
-dnl packagesrcdir=`cd $srcdir && pwd`
-dnl AC_DEFINE_UNQUOTED(PACKAGE_SOURCE_DIR, "${packagesrcdir}")
+dnl Require DSSI and liblo
+PKG_CHECK_MODULES(MODULE, dssi >= 0.4 liblo >= 0.12)
 
 dnl Use lotsa flags if we have gcc.
+dnl !FIX! the '-finline-limit=5000' is apparently a problem for gcc 2.9x?
+CFLAGS="$CFLAGS $MODULE_CFLAGS"
+LDFLAGS="$LDFLAGS $MODULE_LIBS"
 changequote(,)dnl
 if test "x$GCC" = "xyes"; then
   case " $CFLAGS " in
@@ -55,7 +62,11 @@ if test "x$GCC" = "xyes"; then
   esac
   case " $CFLAGS " in
   *[\ \	]-O[1-9][\ \	]*) ;;
-  *) CFLAGS="$CFLAGS -O2 -s -fomit-frame-pointer -funroll-all-loops -finline-functions -ffast-math -finline-limit=5000 -Winline" ;;
+  *) CFLAGS="$CFLAGS -O2" ;;
+  esac
+  case " $CFLAGS " in
+  *[\ \	]-ffast-math[\ \	]*) ;;
+  *) CFLAGS="$CFLAGS -fomit-frame-pointer -funroll-loops -finline-functions -ffast-math -finline-limit=5000 -Winline" ;;
   esac
 fi
 changequote([,])dnl

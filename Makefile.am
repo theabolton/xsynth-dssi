@@ -4,12 +4,12 @@ SUBDIRS = src
 
 EXTRA_DIST = \
 	autogen.sh \
-	dssi.h \
 	extra/Xsynth_gtk.glade \
 	extra/dump_friendly_patches.c \
 	extra/dump_old_xsynth_patch.c \
 	extra/factory_patches.Xsynth \
-	extra/patch_library.Xsynth
+	extra/patch_library.Xsynth \
+	src/xsynth_voice_render-original.c
 
 dist_pkgdata_DATA = extra/factory_patches.Xsynth extra/patch_library.Xsynth
 

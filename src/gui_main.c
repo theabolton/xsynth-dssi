@@ -16,7 +16,7 @@
  * PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public
- * License along with this library; if not, write to the Free
+ * License along with this program; if not, write to the Free
  * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307, USA.
  */
@@ -36,8 +36,6 @@
 #include <gtk/gtk.h>
 #include <lo/lo.h>
  
-#include <fcntl.h>  /* -FIX- just for lo_server_set_nonblocking() */
- 
 #include "xsynth_types.h"
 #include "xsynth.h"
 #include "gui_callbacks.h"
@@ -46,6 +44,8 @@
 
 /* ==== global variables ==== */
 
+char *     osc_host_url;
+char *     osc_self_url;
 lo_address osc_host_address;
 char *     osc_configure_path;
 char *     osc_control_path;
@@ -65,21 +65,6 @@ char            patches_tmp_filename[PATH_MAX];
 int last_configure_load_was_from_tmp;
 
 int host_requested_quit = 0;
-
-/* ==== a couple things that liblo oughta have ==== */
-
-int
-lo_server_get_socket_fd(lo_server *server)
-{
-    return *(int *)server;  /* !FIX! ack. _will_ break, but saves us from needing lo_types_internal.h here.*/
-}
-
-int
-lo_server_set_nonblocking(lo_server *server)
-{
-    /* make the server socket non-blocking */
-    return fcntl(lo_server_get_socket_fd(server), F_SETFL, O_NONBLOCK);
-}
 
 /* ==== OSC handling ==== */
 
@@ -134,7 +119,6 @@ osc_action_handler(const char *path, const char *types, lo_arg **argv,
             gtk_widget_show(main_window);
         else
             gdk_window_raise(main_window->window);
-
 
     } else if (!strcmp(user_data, "hide")) {
 
@@ -214,9 +198,18 @@ void
 osc_data_on_socket_callback(gpointer data, gint source,
                             GdkInputCondition condition)
 {
-    lo_server *server = (lo_server *)data;
+    lo_server server = (lo_server)data;
 
-    lo_server_recv(server);                                                 
+    lo_server_recv_noblock(server, 0);
+}
+
+gint
+update_request_timeout_callback(gpointer data)
+{
+    /* send our update request */
+    lo_send(osc_host_address, osc_update_path, "s", osc_self_url);
+
+    return FALSE;  /* don't need to do this again */
 }
 
 /* ==== miscellaneous ==== */
@@ -263,9 +256,10 @@ create_patches_tmp_filename(const char *path)
 int
 main(int argc, char *argv[])
 {
-    char *host, *port, *path, *tmp_url, *self_url;
+    char *host, *port, *path, *tmp_url;
     lo_server osc_server;
     gint osc_server_socket_tag;
+    gint update_request_timeout_tag;
 
     XSYNTH_DEBUG_INIT("Xsynth_gtk");
 
@@ -285,9 +279,10 @@ main(int argc, char *argv[])
     }
 
     /* set up OSC support */
-    host = lo_url_get_hostname(argv[1]);
-    port = lo_url_get_port(argv[1]);
-    path = lo_url_get_path(argv[1]);
+    osc_host_url = argv[1];
+    host = lo_url_get_hostname(osc_host_url);
+    port = lo_url_get_port(osc_host_url);
+    path = lo_url_get_path(osc_host_url);
     osc_host_address = lo_address_new(host, port);
     osc_configure_path = osc_build_path(path, "/configure");
     osc_control_path   = osc_build_path(path, "/control");
@@ -300,10 +295,6 @@ main(int argc, char *argv[])
     osc_update_path    = osc_build_path(path, "/update");
 
     osc_server = lo_server_new(NULL, osc_error);
-    if (lo_server_set_nonblocking(osc_server)) {
-        GDB_MESSAGE(GDB_OSC, " error: could not set make OSC server non-blocking!\n");
-        /* bumpy ride! */
-    }
     lo_server_add_method(osc_server, osc_configure_path, "ss", osc_configure_handler, NULL);
     lo_server_add_method(osc_server, osc_control_path, "if", osc_control_handler, NULL);
     lo_server_add_method(osc_server, osc_hide_path, "", osc_action_handler, "hide");
@@ -313,13 +304,17 @@ main(int argc, char *argv[])
     lo_server_add_method(osc_server, NULL, NULL, osc_debug_handler, NULL);
 
     tmp_url = lo_server_get_url(osc_server);
-    self_url = osc_build_path(tmp_url, (strlen(path) > 1 ? path + 1 : path));
+    osc_self_url = osc_build_path(tmp_url, (strlen(path) > 1 ? path + 1 : path));
     free(tmp_url);
 
     /* set up GTK+ */
     create_windows(argv[4]);
 
     /* add OSC server socket to GTK+'s watched I/O */
+    if (lo_server_get_socket_fd(osc_server) < 0) {
+        fprintf(stderr, "Xsynth_gtk fatal: OSC transport does not support exposing socket fd\n");
+        exit(1);
+    }
     osc_server_socket_tag = gdk_input_add(lo_server_get_socket_fd(osc_server),
                                           GDK_INPUT_READ,
                                           osc_data_on_socket_callback,
@@ -332,8 +327,10 @@ main(int argc, char *argv[])
     last_configure_load_was_from_tmp = 0;
     create_patches_tmp_filename(path);
 
-    /* send our update request */
-    lo_send(osc_host_address, osc_update_path, "s", self_url);
+    /* schedule our update request */
+    update_request_timeout_tag = gtk_timeout_add(50,
+                                                 update_request_timeout_callback,
+                                                 NULL);
 
     /* let GTK+ take it from here */
     gtk_main();
@@ -342,6 +339,7 @@ main(int argc, char *argv[])
     GDB_MESSAGE(GDB_MAIN, ": yep, we got to the cleanup!\n");
 
     /* GTK+ cleanup */
+    gtk_timeout_remove(update_request_timeout_tag);
     gdk_input_remove(osc_server_socket_tag);
 
     /* say bye-bye */
@@ -359,12 +357,14 @@ main(int argc, char *argv[])
     free(path);
     free(osc_configure_path);
     free(osc_control_path);
+    free(osc_exiting_path);
     free(osc_hide_path);
     free(osc_midi_path);
     free(osc_program_path);
     free(osc_quit_path);
     free(osc_show_path);
     free(osc_update_path);
+    free(osc_self_url);
 
     return 0;
 }

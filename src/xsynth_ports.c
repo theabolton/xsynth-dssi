@@ -16,7 +16,7 @@
  * PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public
- * License along with this library; if not, write to the Free
+ * License along with this program; if not, write to the Free
  * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307, USA.
  */
@@ -34,6 +34,7 @@ struct xsynth_port_descriptor xsynth_port_description[XSYNTH_PORTS_COUNT] = {
 #define HD_MID     (LADSPA_HINT_BOUNDED_BELOW | LADSPA_HINT_BOUNDED_ABOVE | LADSPA_HINT_DEFAULT_MIDDLE)
 #define HD_HI      (LADSPA_HINT_BOUNDED_BELOW | LADSPA_HINT_BOUNDED_ABOVE | LADSPA_HINT_DEFAULT_HIGH)
 #define HD_MAX     (LADSPA_HINT_BOUNDED_BELOW | LADSPA_HINT_BOUNDED_ABOVE | LADSPA_HINT_DEFAULT_MAXIMUM)
+#define HD_440     (LADSPA_HINT_BOUNDED_BELOW | LADSPA_HINT_BOUNDED_ABOVE | LADSPA_HINT_DEFAULT_440)
 #define HD_LOG     (LADSPA_HINT_LOGARITHMIC)
 #define HD_DETENT  (LADSPA_HINT_BOUNDED_BELOW | LADSPA_HINT_BOUNDED_ABOVE | LADSPA_HINT_INTEGER | LADSPA_HINT_DEFAULT_MINIMUM)
 #define HD_SWITCH  (LADSPA_HINT_BOUNDED_BELOW | LADSPA_HINT_BOUNDED_ABOVE | LADSPA_HINT_INTEGER | LADSPA_HINT_TOGGLED )
@@ -70,12 +71,17 @@ struct xsynth_port_descriptor xsynth_port_description[XSYNTH_PORTS_COUNT] = {
     { PD_IN,  "VCF Resonance",       HD_MIN,          0.0f,     1.995f, XPT_LIN,   0.,1.995,0. },
     { PD_IN,  "VCF dB/oct 12 or 24", HD_SWITCH,       0.0f,     1.0f,   XPT_ONOFF, 0.,0.,0. },
     { PD_IN,  "Glide Rate",          HD_MIN | HD_LOG, 0.002f,   1.0f,   XPT_LOG,   1.,0.002,1. },  // -FIX- this needs to be adjusted for different cx rates!
-    { PD_IN,  "Volume",              HD_LOW,          0.0f,     1.0f,   XPT_LIN,   0.,1.,0. }
+    { PD_IN,  "Volume",              HD_LOW,          0.0f,     1.0f,   XPT_LIN,   0.,1.,0. },
+    /* added in v0.2: */
+    { PD_IN,  "Tuning",              HD_440,          415.3f,   466.2f, XPT_LIN,   415.3,466.2,0. },
+    { PD_IN,  "EG1 Velocity Sens",   HD_MIN,          0.0f,     1.0f,   XPT_LIN,   0.,1.,0. },
+    { PD_IN,  "EG2 Velocity Sens",   HD_MIN,          0.0f,     1.0f,   XPT_LIN,   0.,1.,0. }
 #undef PD_OUT
 #undef PD_IN
 #undef HD_MIN
 #undef HD_LOW
 #undef HD_MAX
+#undef HD_440
 #undef HD_LOG
 #undef HD_DETENT
 #undef HD_SWITCH

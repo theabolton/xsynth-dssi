@@ -18,7 +18,7 @@
  * PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public
- * License along with this library; if not, write to the Free
+ * License along with this program; if not, write to the Free
  * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307, USA.
  */
@@ -53,12 +53,14 @@ struct _xsynth_patch_t
     float         eg1_decay_time;
     float         eg1_sustain_level;
     float         eg1_release_time;
+    float         eg1_vel_sens;
     float         eg1_amount_o;
     float         eg1_amount_f;
     float         eg2_attack_time;
     float         eg2_decay_time;
     float         eg2_sustain_level;
     float         eg2_release_time;
+    float         eg2_vel_sens;
     float         eg2_amount_o;
     float         eg2_amount_f;
     float         vcf_cutoff;
@@ -133,9 +135,7 @@ void            xsynth_voice_update_pressure_mod(xsynth_synth_t *synth,
                                                  xsynth_voice_t *voice);
 
 /* xsynth_voice_render.c */
-void xsynth_init_waveforms(void);
-void xsynth_pitch_init(void);
-void xsynth_volume_init(void);
+void xsynth_init_tables(void);
 void xsynth_voice_render(xsynth_synth_t *synth, xsynth_voice_t *voice,
                          LADSPA_Data *out, unsigned long sample_count,
                          int do_control_update);

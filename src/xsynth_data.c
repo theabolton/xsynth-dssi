@@ -13,7 +13,7 @@
  * PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public
- * License along with this library; if not, write to the Free
+ * License along with this program; if not, write to the Free
  * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307, USA.
  */
@@ -27,16 +27,16 @@
 
 xsynth_patch_t xsynth_init_voice = {
     "- new voice -",
-    1.0f, 0, 0.5f,                      /* osc1 */
-    1.0f, 0, 0.5f,                      /* osc2 */
-    0,                                  /* sync */
-    0.5f,                               /* balance */
-    0.1f, 0, 0.0f, 0.0f,                /* lfo */
-    0.1f, 0.1f, 1.0f, 0.1f, 0.0f, 0.0f, /* eg1 */
-    0.1f, 0.1f, 1.0f, 0.1f, 0.0f, 0.0f, /* eg2 */
-    50.0f, 0.0f, 0,                     /* vcf */
-    0.984375f,                          /* glide */
-    0.5f                                /* volume */
+    1.0f, 0, 0.5f,                            /* osc1 */
+    1.0f, 0, 0.5f,                            /* osc2 */
+    0,                                        /* sync */
+    0.5f,                                     /* balance */
+    0.1f, 0, 0.0f, 0.0f,                      /* lfo */
+    0.1f, 0.1f, 1.0f, 0.1f, 0.0f, 0.0f, 0.0f, /* eg1 */
+    0.1f, 0.1f, 1.0f, 0.1f, 0.0f, 0.0f, 0.0f, /* eg2 */
+    50.0f, 0.0f, 0,                           /* vcf */
+    0.984375f,                                /* glide */
+    0.5f                                      /* volume */
 };
 
 static int
@@ -82,7 +82,7 @@ int
 xsynth_data_read_patch(FILE *file, xsynth_patch_t *patch, unsigned long bank,
                         unsigned long program)
 {
-    int i;
+    int format, i;
     char buf[256], buf2[90];
     xsynth_patch_t tmp;
 
@@ -90,7 +90,8 @@ xsynth_data_read_patch(FILE *file, xsynth_patch_t *patch, unsigned long bank,
         if (!fgets(buf, 256, file)) return 0;
     } while (is_comment(buf));
 
-    if (sscanf(buf, " xsynth-dssi patch format %d begin", &i) != 1 || i != 0)
+    if (sscanf(buf, " xsynth-dssi patch format %d begin", &format) != 1 ||
+        format < 0 || format > 1)
         return 0;
 
     if (!fgets(buf, 256, file)) return 0;
@@ -124,20 +125,44 @@ xsynth_data_read_patch(FILE *file, xsynth_patch_t *patch, unsigned long bank,
         return 0;
     tmp.lfo_waveform = (unsigned char)i;
 
-    if (!fgets(buf, 256, file)) return 0;
-    if (sscanf(buf, " eg1 %f %f %f %f %f %f",
-               &tmp.eg1_attack_time, &tmp.eg1_decay_time,
-               &tmp.eg1_sustain_level, &tmp.eg1_release_time,
-               &tmp.eg1_amount_o, &tmp.eg1_amount_f) != 6)
-        return 0;
+    if (format == 1) {
 
-    if (!fgets(buf, 256, file)) return 0;
-    if (sscanf(buf, " eg2 %f %f %f %f %f %f",
-               &tmp.eg2_attack_time, &tmp.eg2_decay_time,
-               &tmp.eg2_sustain_level, &tmp.eg2_release_time,
-               &tmp.eg2_amount_o, &tmp.eg2_amount_f) != 6)
-        return 0;
-    
+        if (!fgets(buf, 256, file)) return 0;
+        if (sscanf(buf, " eg1 %f %f %f %f %f %f %f",
+                   &tmp.eg1_attack_time, &tmp.eg1_decay_time,
+                   &tmp.eg1_sustain_level, &tmp.eg1_release_time,
+                   &tmp.eg1_vel_sens, &tmp.eg1_amount_o,
+                   &tmp.eg1_amount_f) != 7)
+            return 0;
+
+        if (!fgets(buf, 256, file)) return 0;
+        if (sscanf(buf, " eg2 %f %f %f %f %f %f %f",
+                   &tmp.eg2_attack_time, &tmp.eg2_decay_time,
+                   &tmp.eg2_sustain_level, &tmp.eg2_release_time,
+                   &tmp.eg2_vel_sens, &tmp.eg2_amount_o,
+                   &tmp.eg2_amount_f) != 7)
+            return 0;
+
+    } else {
+
+        if (!fgets(buf, 256, file)) return 0;
+        if (sscanf(buf, " eg1 %f %f %f %f %f %f",
+                   &tmp.eg1_attack_time, &tmp.eg1_decay_time,
+                   &tmp.eg1_sustain_level, &tmp.eg1_release_time,
+                   &tmp.eg1_amount_o, &tmp.eg1_amount_f) != 6)
+            return 0;
+
+        if (!fgets(buf, 256, file)) return 0;
+        if (sscanf(buf, " eg2 %f %f %f %f %f %f",
+                   &tmp.eg2_attack_time, &tmp.eg2_decay_time,
+                   &tmp.eg2_sustain_level, &tmp.eg2_release_time,
+                   &tmp.eg2_amount_o, &tmp.eg2_amount_f) != 6)
+            return 0;
+
+        tmp.eg1_vel_sens = 0.0f;
+        tmp.eg2_vel_sens = 0.0f;
+    }
+
     if (!fgets(buf, 256, file)) return 0;
     if (sscanf(buf, " vcf %f %f %d", &tmp.vcf_cutoff, &tmp.vcf_qres, &i) != 3)
         return 0;

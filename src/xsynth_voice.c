@@ -18,7 +18,7 @@
  * PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public
- * License along with this library; if not, write to the Free
+ * License along with this program; if not, write to the Free
  * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307, USA.
  */
@@ -273,12 +273,14 @@ xsynth_voice_set_ports(xsynth_synth_t *synth, xsynth_patch_t *patch)
     *(synth->eg1_decay_time)    = patch->eg1_decay_time;
     *(synth->eg1_sustain_level) = patch->eg1_sustain_level;
     *(synth->eg1_release_time)  = patch->eg1_release_time;
+    *(synth->eg1_vel_sens)      = patch->eg1_vel_sens;
     *(synth->eg1_amount_o)      = patch->eg1_amount_o;
     *(synth->eg1_amount_f)      = patch->eg1_amount_f;
     *(synth->eg2_attack_time)   = patch->eg2_attack_time;
     *(synth->eg2_decay_time)    = patch->eg2_decay_time;
     *(synth->eg2_sustain_level) = patch->eg2_sustain_level;
     *(synth->eg2_release_time)  = patch->eg2_release_time;
+    *(synth->eg2_vel_sens)      = patch->eg2_vel_sens;
     *(synth->eg2_amount_o)      = patch->eg2_amount_o;
     *(synth->eg2_amount_f)      = patch->eg2_amount_f;
     *(synth->vcf_cutoff)        = patch->vcf_cutoff;

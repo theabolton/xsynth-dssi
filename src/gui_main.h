@@ -13,7 +13,7 @@
  * PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public
- * License along with this library; if not, write to the Free
+ * License along with this program; if not, write to the Free
  * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307, USA.
  */
@@ -29,9 +29,12 @@
 
 #include "xsynth_types.h"
 
+extern char *     osc_host_url;
+extern char *     osc_self_url;
 extern lo_address osc_host_address;
 extern char *     osc_configure_path;
 extern char *     osc_control_path;
+extern char *     osc_exiting_path;
 extern char *     osc_hide_path;
 extern char *     osc_midi_path;
 extern char *     osc_program_path;

@@ -16,7 +16,7 @@
  * PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public
- * License along with this library; if not, write to the Free
+ * License along with this program; if not, write to the Free
  * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307, USA.
  */
@@ -61,6 +61,7 @@ static int internal_gui_update_only = 0;
 
 static unsigned char test_note_noteon_key = 60;
 static unsigned char test_note_noteoff_key;
+static unsigned char test_note_velocity = 96;
 
 static gchar *file_selection_last_filename = NULL;
 
@@ -103,6 +104,11 @@ void
 on_menu_about_activate                 (GtkMenuItem     *menuitem,
                                         gpointer         user_data)
 {
+    char buf[256];
+    snprintf(buf, 256, "Xsynth-DSSI version: " VERSION "\n"
+                       "plugin URL: %s\n"
+                       "host URL: %s\n", osc_self_url, osc_host_url);
+    gtk_label_set_text (GTK_LABEL (about_label), buf);
     gtk_widget_show(about_window);
 }
 
@@ -111,7 +117,7 @@ on_delete_event_wrapper( GtkWidget *widget, GdkEvent *event, gpointer data )
 {
     void (*handler)(GtkWidget *, gpointer) = (void (*)(GtkWidget *, gpointer))data;
 
-    /* call our 'dismiss' or 'cancel' callback (which must not need the user data) */
+    /* call our 'close', 'dismiss' or 'cancel' callback (which must not need the user data) */
     (*handler)(widget, NULL);
 
     /* tell GTK+ to NOT emit 'destroy' */
@@ -122,8 +128,8 @@ void
 on_open_file_ok( GtkWidget *widget, gpointer data )
 {
     gtk_widget_hide(open_file_selection);
-    file_selection_last_filename = gtk_file_selection_get_filename(
-                                       GTK_FILE_SELECTION(open_file_selection));
+    file_selection_last_filename = (gchar *)gtk_file_selection_get_filename(
+                                                GTK_FILE_SELECTION(open_file_selection));
 
     GDB_MESSAGE(GDB_GUI, " on_open_file_ok: file '%s' selected\n",
                     file_selection_last_filename);
@@ -226,10 +232,10 @@ on_save_file_ok( GtkWidget *widget, gpointer data )
     char *message;
 
     gtk_widget_hide(save_file_selection);
-    file_selection_last_filename = gtk_file_selection_get_filename(
-                                       GTK_FILE_SELECTION(save_file_selection));
+    file_selection_last_filename = (gchar *)gtk_file_selection_get_filename(
+                                                GTK_FILE_SELECTION(save_file_selection));
 
-    GDB_MESSAGE(GDB_GUI, " on_open_file_ok: file '%s' selected\n",
+    GDB_MESSAGE(GDB_GUI, " on_save_file_ok: file '%s' selected\n",
                     file_selection_last_filename);
 
     if (gui_data_save(file_selection_last_filename, &message)) {
@@ -369,27 +375,41 @@ on_voice_onoff_toggled( GtkWidget *widget, gpointer data )
 void
 on_test_note_slider_change(GtkWidget *widget, gpointer data)
 {
-    test_note_noteon_key = lrintf(GTK_ADJUSTMENT(widget)->value);
+    unsigned char value = lrintf(GTK_ADJUSTMENT(widget)->value);
 
-    GDB_MESSAGE(GDB_GUI, " on_test_note_slider_change: new test note key %d\n", test_note_noteon_key);
+    if ((int)data == 0) {  /* key */
+
+        test_note_noteon_key = value;
+        GDB_MESSAGE(GDB_GUI, " on_test_note_slider_change: new test note key %d\n", test_note_noteon_key);
+
+    } else {  /* velocity */
+
+        test_note_velocity = value;
+        GDB_MESSAGE(GDB_GUI, " on_test_note_slider_change: new test note velocity %d\n", test_note_velocity);
+
+    }
 }
 
 void
 on_test_note_button_press(GtkWidget *widget, gpointer data)
 {
-    unsigned char midi[4] = { 0x00, 0x90, 0x3C, 0x40 };
+    unsigned char midi[4];
 
     if ((int)data) {  /* button pressed */
 
+        midi[0] = 0;
         midi[1] = 0x90;
         midi[2] = test_note_noteon_key;
+        midi[3] = test_note_velocity;
         lo_send(osc_host_address, osc_midi_path, "m", midi);
         test_note_noteoff_key = test_note_noteon_key;
 
     } else { /* button released */
 
+        midi[0] = 0;
         midi[1] = 0x80;
         midi[2] = test_note_noteoff_key;
+        midi[3] = 0x40;
         lo_send(osc_host_address, osc_midi_path, "m", midi);
 
     }
@@ -455,11 +475,31 @@ on_edit_save_position_cancel( GtkWidget *widget, gpointer data )
 }
 
 void
+on_tuning_change(GtkWidget *widget, gpointer data)
+{
+    float value = GTK_ADJUSTMENT(widget)->value;
+
+    if (internal_gui_update_only) {
+        /* GUIDB_MESSAGE(DB_GUI, " on_tuning_change: skipping further action\n"); */
+        return;
+    }
+
+    GDB_MESSAGE(GDB_GUI, " on_tuning_change: tuning set to %10.6f\n", value);
+
+    lo_send(osc_host_address, osc_control_path, "if", XSYNTH_PORT_TUNING, value);
+}
+
+void
 on_polyphony_change(GtkWidget *widget, gpointer data)
 {
     int polyphony = lrintf(GTK_ADJUSTMENT(widget)->value);
     char buffer[4];
     
+    if (internal_gui_update_only) {
+        /* GUIDB_MESSAGE(DB_GUI, " on_polyphony_change: skipping further action\n"); */
+        return;
+    }
+
     GDB_MESSAGE(GDB_GUI, " on_polyphony_change: polyphony set to %d\n", polyphony);
 
     snprintf(buffer, 4, "%d", polyphony);
@@ -532,9 +572,12 @@ update_voice_widget(int port, float value)
     float cval;
     int dval;
 
-    if (port < XSYNTH_PORT_OSC1_PITCH || port > XSYNTH_PORT_VOLUME) {
+    if (port < XSYNTH_PORT_OSC1_PITCH || port >= XSYNTH_PORTS_COUNT) {
         return;
     }
+    if (port == XSYNTH_PORT_TUNING)
+        return;  // !FIX!
+
     xpd = &xsynth_port_description[port];
     if (value < xpd->lower_bound)
         value = xpd->lower_bound;
@@ -582,6 +625,10 @@ update_voice_widget(int port, float value)
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), dval); /* causes call to on_voice_onoff_toggled callback */
         break;
 
+        // !FIX! handle tuning specially!
+      // if (port == XSYNTH_PORT_TUNING)
+      //  ....
+
       default:
         break;
     }
@@ -613,12 +660,14 @@ update_voice_widgets_from_patch(xsynth_patch_t *patch)
     update_voice_widget(XSYNTH_PORT_EG1_DECAY_TIME,    patch->eg1_decay_time);
     update_voice_widget(XSYNTH_PORT_EG1_SUSTAIN_LEVEL, patch->eg1_sustain_level);
     update_voice_widget(XSYNTH_PORT_EG1_RELEASE_TIME,  patch->eg1_release_time);
+    update_voice_widget(XSYNTH_PORT_EG1_VEL_SENS,      patch->eg1_vel_sens);
     update_voice_widget(XSYNTH_PORT_EG1_AMOUNT_O,      patch->eg1_amount_o);
     update_voice_widget(XSYNTH_PORT_EG1_AMOUNT_F,      patch->eg1_amount_f);
     update_voice_widget(XSYNTH_PORT_EG2_ATTACK_TIME,   patch->eg2_attack_time);
     update_voice_widget(XSYNTH_PORT_EG2_DECAY_TIME,    patch->eg2_decay_time);
     update_voice_widget(XSYNTH_PORT_EG2_SUSTAIN_LEVEL, patch->eg2_sustain_level);
     update_voice_widget(XSYNTH_PORT_EG2_RELEASE_TIME,  patch->eg2_release_time);
+    update_voice_widget(XSYNTH_PORT_EG2_VEL_SENS,      patch->eg2_vel_sens);
     update_voice_widget(XSYNTH_PORT_EG2_AMOUNT_O,      patch->eg2_amount_o);
     update_voice_widget(XSYNTH_PORT_EG2_AMOUNT_F,      patch->eg2_amount_f);
     update_voice_widget(XSYNTH_PORT_VCF_CUTOFF,        patch->vcf_cutoff);
@@ -692,12 +741,14 @@ update_patch_from_voice_widgets(xsynth_patch_t *patch)
     patch->eg1_decay_time       = get_value_from_slider(XSYNTH_PORT_EG1_DECAY_TIME);    
     patch->eg1_sustain_level    = get_value_from_slider(XSYNTH_PORT_EG1_SUSTAIN_LEVEL); 
     patch->eg1_release_time     = get_value_from_slider(XSYNTH_PORT_EG1_RELEASE_TIME);  
+    patch->eg1_vel_sens         = get_value_from_slider(XSYNTH_PORT_EG1_VEL_SENS);
     patch->eg1_amount_o         = get_value_from_slider(XSYNTH_PORT_EG1_AMOUNT_O);      
     patch->eg1_amount_f         = get_value_from_slider(XSYNTH_PORT_EG1_AMOUNT_F);      
     patch->eg2_attack_time      = get_value_from_slider(XSYNTH_PORT_EG2_ATTACK_TIME);   
     patch->eg2_decay_time       = get_value_from_slider(XSYNTH_PORT_EG2_DECAY_TIME);    
     patch->eg2_sustain_level    = get_value_from_slider(XSYNTH_PORT_EG2_SUSTAIN_LEVEL); 
     patch->eg2_release_time     = get_value_from_slider(XSYNTH_PORT_EG2_RELEASE_TIME);  
+    patch->eg2_vel_sens         = get_value_from_slider(XSYNTH_PORT_EG2_VEL_SENS);
     patch->eg2_amount_o         = get_value_from_slider(XSYNTH_PORT_EG2_AMOUNT_O);      
     patch->eg2_amount_f         = get_value_from_slider(XSYNTH_PORT_EG2_AMOUNT_F);      
     patch->vcf_cutoff           = get_value_from_slider(XSYNTH_PORT_VCF_CUTOFF);        
@@ -712,6 +763,48 @@ update_patch_from_voice_widgets(xsynth_patch_t *patch)
     i = strlen(patch->name);
     while(i && patch->name[i - 1] == ' ') i--;
     patch->name[i] = 0;
+}
+
+void
+update_monophonic(const char *value)
+{
+    int index;
+
+    GDB_MESSAGE(GDB_OSC, ": update_monophonic called with '%s'\n", value);
+
+    if (!strcmp(value, "off")) {
+        index = 0;
+    } else if (!strcmp(value, "on")) {
+        index = 1;
+    } else if (!strcmp(value, "once")) {
+        index = 2;
+    } else if (!strcmp(value, "both")) {
+        index = 3;
+    } else {
+        return;
+    }
+
+    gtk_option_menu_set_history(GTK_OPTION_MENU (monophonic_option_menu),
+                                index);  /* updates optionmenu current selection,
+                                          * without needing to send it a signal */
+}
+
+void
+update_polyphony(const char *value)
+{
+    int poly = atoi(value);
+
+    GDB_MESSAGE(GDB_OSC, ": update_polyphony called with '%s'\n", value);
+
+    if (poly > 0 && poly < XSYNTH_MAX_POLYPHONY) {
+
+        internal_gui_update_only = 1;
+
+        GTK_ADJUSTMENT(polyphony_adj)->value = (float)poly;
+        gtk_signal_emit_by_name (GTK_OBJECT (polyphony_adj), "value_changed");  /* causes call to on_voice_slider_change callback */
+
+        internal_gui_update_only = 0;
+    }
 }
 
 void

@@ -18,7 +18,7 @@
  * PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public
- * License along with this library; if not, write to the Free
+ * License along with this program; if not, write to the Free
  * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307, USA.
  */
@@ -90,12 +90,14 @@ struct _xsynth_synth_t {
     LADSPA_Data    *eg1_decay_time;
     LADSPA_Data    *eg1_sustain_level;
     LADSPA_Data    *eg1_release_time;
+    LADSPA_Data    *eg1_vel_sens;
     LADSPA_Data    *eg1_amount_o;
     LADSPA_Data    *eg1_amount_f;
     LADSPA_Data    *eg2_attack_time;
     LADSPA_Data    *eg2_decay_time;
     LADSPA_Data    *eg2_sustain_level;
     LADSPA_Data    *eg2_release_time;
+    LADSPA_Data    *eg2_vel_sens;
     LADSPA_Data    *eg2_amount_o;
     LADSPA_Data    *eg2_amount_f;
     LADSPA_Data    *vcf_cutoff;
@@ -103,6 +105,7 @@ struct _xsynth_synth_t {
     LADSPA_Data    *vcf_4pole;
     LADSPA_Data    *glide_time;
     LADSPA_Data    *volume;
+    LADSPA_Data    *tuning;
 };
 
 void  xsynth_synth_all_voices_off(xsynth_synth_t *synth);

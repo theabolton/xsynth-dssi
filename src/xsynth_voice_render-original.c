@@ -2,7 +2,7 @@
  *
  * Copyright (C) 2004 Sean Bolton and others.
  *
- * Much of this file comes from Steve Brookes' Xsynth,
+ * Most of this file comes from Steve Brookes' Xsynth,
  * copyright (C) 1999 S. J. Brookes.
  * Portions of this file may have come from Peter Hanappe's
  * Fluidsynth, copyright (C) 2003 Peter Hanappe and others.
@@ -37,13 +37,16 @@
 
  /********************************************************************
  *                                                                   *
- * Xsynth-DSSI started out as a DSSI demonstration plugin, and       *
- * originally this file was just Steve Brookes' Xsynth code with as  *
- * little modification as was necessary to interface it with my DSSI *
- * plugin code.  If you'd like to see that simpler version, check    *
- * out the included file src/xsynth_voice_render-original.c.         *
- *                                                                   *
- * And Steve, wherever you are -- thanks.                            *
+ * What follows below is Steve Brookes' Xsynth code, nearly          *
+ * unmodified except to interface it with my DSSI plugin code. I     *
+ * chose his code because it's simple, and because I think he did a  *
+ * really good job of scaling the knobs to make it easy to get good  *
+ * sounds. It does need band-limited oscillators and a wad of        *
+ * optimization, though.  Since Xsynth-DSSI is intended primarily as *
+ * a demonstration plugin for the DSSI RFC, I've concentrated on     *
+ * implementing that and mostly resisted the temptation to fiddle    *
+ * with Steve's original code.  If you'd like to help with this,     *
+ * please do.  Oh, and Steve, wherever you are -- thanks.            *
  *                                                                   *
  ********************************************************************/
 
@@ -54,26 +57,11 @@ float        xsynth_pitch[128];
 static float sine_wave[WAVE_POINTS+1],
              triangle_wave[WAVE_POINTS+1];
 
-#define pitch_ref_pitch 440.0
-#define pitch_ref_note 69
-
-#define volume_to_amplitude_scale 128
-
-static float volume_to_amplitude_table[4 + volume_to_amplitude_scale + 2];
-
-static float velocity_to_attenuation[128];
-
-static float qdB_to_amplitude_table[4 + 256 + 0];
-
 void
-xsynth_init_tables(void)
+xsynth_init_waveforms(void)
 {
     int i, qn, tqn;
-    float pexp;
-    float volume, volume_exponent;
-    float ol, amp;
 
-    /* oscillator waveforms */
     for (i = 0; i <= WAVE_POINTS; ++i) {
         sine_wave[i] = sin(2.0f * M_PI * (float)i / WAVE_POINTS);
     }
@@ -89,53 +77,46 @@ xsynth_init_tables(void)
         else
             triangle_wave[i] = (float)(i - tqn) / (float)(WAVE_POINTS - tqn) - 1.0f;
     }
+}
 
-    /* MIDI note to pitch */
+#define ref_pitch 440.0
+#define ref_note 69
+
+void
+xsynth_pitch_init(void)
+{
+    int i;
+
+    float pexp;
+
     for (i = 0; i < 128; ++i) {
-        pexp = (float)(i - pitch_ref_note) / 12.0f;
-        xsynth_pitch[i] = pitch_ref_pitch * pow(2.0f, pexp);
+        pexp = (float)(i - ref_note) / 12.0f;
+        xsynth_pitch[i] = ref_pitch * pow(2.0f, pexp);
     }
+}
 
-    /* volume to amplitude
-     *
-     * This generates a curve which is:
-     *  volume_to_amplitude_table[128 + 4] = 1.0       =   0dB
-     *  volume_to_amplitude_table[64 + 4]  = 0.316...  = -10dB
-     *  volume_to_amplitude_table[32 + 4]  = 0.1       = -20dB
-     *  volume_to_amplitude_table[16 + 4]  = 0.0316... = -30dB
-     *   etc.
-     */
-    volume_exponent = 1.0f / (2.0f * log10f(2.0f));
-    for(i = 0; i <= volume_to_amplitude_scale; i++) {
-        volume = (float)i / (float)volume_to_amplitude_scale;
-        volume_to_amplitude_table[i + 4] = powf(volume, volume_exponent);
-    }
-    volume_to_amplitude_table[ -1 + 4] = 0.0f;
-    volume_to_amplitude_table[129 + 4] = 1.0f;
+#define number_of_points 101
+#define number_of_points_m1 100
 
-    /* velocity to attenuation
-     *
-     * Creates the velocity to attenuation lookup table, for converting
-     * velocities [1, 127] to full-velocity-sensitivity attenuation in
-     * quarter decibels.  Modeled after my TX-7's velocity response.*/
-    velocity_to_attenuation[0] = 253.9999f;
-    for (i = 1; i < 127; i++) {
-        if (i >= 10) {
-            ol = (powf(((float)i / 127.0f), 0.32f) - 1.0f) * 100.0f;
-            amp = powf(2.0f, ol / 8.0f);
-        } else {
-            ol = (powf(((float)10 / 127.0f), 0.32f) - 1.0f) * 100.0f;
-            amp = powf(2.0f, ol / 8.0f) * (float)i / 10.0f;
-        }
-        velocity_to_attenuation[i] = log10f(amp) * -80.0f;
-    }
-    velocity_to_attenuation[127] = 0.0f;
+static float factor[number_of_points];
+static float deriva[number_of_points];
 
-    /* quarter-decibel attenuation to amplitude */
-    qdB_to_amplitude_table[3] = 1.0f;
-    for (i = 0; i <= 255; i++) {
-        qdB_to_amplitude_table[i + 4] = powf(10.0f, (float)i / -80.0f);
-    }
+void
+xsynth_volume_init(void)
+{
+  int i;
+  float volume,volume_exponent=1./(2.*log10(2.));
+
+  for(i=0; i<number_of_points; ++i)
+  {
+    volume=(float)i/number_of_points_m1;
+    factor[i]=pow(volume,volume_exponent);
+  }
+
+  for(i=0; i<number_of_points_m1; ++i)
+  {
+    deriva[i]=factor[i+1]-factor[i];
+  }
 }
 
 static inline float
@@ -144,101 +125,14 @@ volume(float level)
     unsigned char segment;
     float fract;
 
-    level *= (float)volume_to_amplitude_scale;
-    segment = lrintf(level - 0.5);
-    fract = level - (float)segment;
+    segment = lrintf(floorf((float)number_of_points_m1 * level));
+    fract = (float)number_of_points_m1 * level - (float)segment;
 
-    return volume_to_amplitude_table[segment + 4] + fract *
-               (volume_to_amplitude_table[segment + 5] -
-                volume_to_amplitude_table[segment + 4]);
+    if (segment == number_of_points_m1)
+        return 1.0f;
+    else
+        return factor[segment] + deriva[segment] * fract;
 }
-
-static inline float
-qdB_to_amplitude(float qdB)
-{
-    int i = lrintf(qdB - 0.5f);
-    float f = qdB - (float)i;
-    return qdB_to_amplitude_table[i + 4] + f *
-           (qdB_to_amplitude_table[i + 5] -
-            qdB_to_amplitude_table[i + 4]);
-}
-
-#if 0
-/* Velocity to attenuation lookup table, for converting velocities [1, 127]
- * to full-velocity-sensitivity attenuation in centiBels.  Modeled after my
- * TX-7's velocity response, and generated using the follow perl:
- *
- * for ($vel = 1; $vel < 128; $vel++) {
- *     if ($vel >= 10) {
- *         $ol = ((($vel / 127) ** 0.32) - 1) * 100;
- *         $amp = 2 ** ($ol / 8);
- *     } else {
- *         $ol = (((10 / 127) ** 0.32) - 1) * 100;
- *         $amp = 2 ** ($ol / 8) * $vel / 10;
- *     }
- *     printf(" %f,", log($amp) / log(10) * -200);
- * }
- */
-float velocity_to_attenuation[128] = {
-  1023.99999f, 618.893135f, 558.687136f, 523.468884f, 498.481137f, 479.099134f, 463.262885f, 449.873527f,
-  438.275137f, 428.044633f, 418.893135f, 408.559300f, 398.846052f, 389.668726f, 380.959710f, 372.664055f,
-  364.736430f, 357.138952f, 349.839602f, 342.811044f, 336.029737f, 329.475243f, 323.129695f, 316.977370f,
-  311.004351f, 305.198257f, 299.548015f, 294.043680f, 288.676284f, 283.437705f, 278.320564f, 273.318135f,
-  268.424268f, 263.633320f, 258.940104f, 254.339838f, 249.828102f, 245.400802f, 241.054138f, 236.784577f,
-  232.588826f, 228.463808f, 224.406651f, 220.414660f, 216.485309f, 212.616225f, 208.805174f, 205.050051f,
-  201.348872f, 197.699762f, 194.100947f, 190.550750f, 187.047578f, 183.589922f, 180.176349f, 176.805495f,
-  173.476064f, 170.186820f, 166.936585f, 163.724237f, 160.548702f, 157.408956f, 154.304018f, 151.232950f,
-  148.194853f, 145.188867f, 142.214167f, 139.269958f, 136.355482f, 133.470006f, 130.612829f, 127.783274f,
-  124.980691f, 122.204453f, 119.453957f, 116.728622f, 114.027885f, 111.351206f, 108.698061f, 106.067947f,
-  103.460376f, 100.874876f,  98.310991f,  95.768281f,  93.246318f,  90.744689f,  88.262993f,  85.800844f,
-   83.357865f,  80.933691f,  78.527969f,  76.140355f,  73.770517f,  71.418131f,  69.082882f,  66.764467f,
-   64.462588f,  62.176956f,  59.907292f,  57.653322f,  55.414782f,  53.191412f,  50.982962f,  48.789186f,
-   46.609845f,  44.444708f,  42.293548f,  40.156144f,  38.032280f,  35.921748f,  33.824341f,  31.739860f,
-   29.668110f,  27.608901f,  25.562046f,  23.527365f,  21.504679f,  19.493816f,  17.494607f,  15.506885f,
-   13.530490f,  11.565262f,   9.611048f,   7.667697f,   5.735059f,   3.812991f,   1.901351f,   0.000000f,
-};
-#endif
-
-#if 0
-/* Velocity to amplitude conversion table, modeled after my TX-7's
- * velocity response, and generated using the follow perl:
- *
- * for ($vel = 0; $vel < 128; $vel++) {
- *     if ($vel >= 10) {
- *         $ol = ((($vel / 127) ** 0.32) - 1) * 100;
- *         $amp = 2 ** ($ol / 8);
- *     } else {
- *         $ol = (((10 / 127) ** 0.32) - 1) * 100;
- *         $amp = 2 ** ($ol / 8) * $vel / 10;
- *     }
- *     printf(" %f,", $amp);
- * }
- */
-float velocity_to_amplitude[128] = {
-    0.000000, 0.000805, 0.001609, 0.002414, 0.003218, 0.004023,
-    0.004827, 0.005632, 0.006436, 0.007241, 0.008045, 0.009062,
-    0.010134, 0.011263, 0.012451, 0.013699, 0.015008, 0.016380,
-    0.017816, 0.019317, 0.020886, 0.022523, 0.024230, 0.026008,
-    0.027860, 0.029786, 0.031788, 0.033867, 0.036026, 0.038266,
-    0.040588, 0.042994, 0.045486, 0.048065, 0.050734, 0.053493,
-    0.056346, 0.059292, 0.062335, 0.065475, 0.068716, 0.072058,
-    0.075503, 0.079055, 0.082713, 0.086481, 0.090360, 0.094352,
-    0.098459, 0.102684, 0.107027, 0.111493, 0.116081, 0.120795,
-    0.125637, 0.130609, 0.135712, 0.140950, 0.146325, 0.151837,
-    0.157491, 0.163288, 0.169231, 0.175322, 0.181562, 0.187956,
-    0.194504, 0.201210, 0.208076, 0.215105, 0.222298, 0.229659,
-    0.237190, 0.244894, 0.252773, 0.260830, 0.269067, 0.277488,
-    0.286095, 0.294890, 0.303877, 0.313059, 0.322437, 0.332016,
-    0.341797, 0.351784, 0.361980, 0.372388, 0.383010, 0.393851,
-    0.404912, 0.416196, 0.427708, 0.439450, 0.451425, 0.463637,
-    0.476088, 0.488782, 0.501722, 0.514912, 0.528355, 0.542054,
-    0.556013, 0.570235, 0.584724, 0.599482, 0.614515, 0.629824,
-    0.645414, 0.661289, 0.677452, 0.693906, 0.710656, 0.727705,
-    0.745057, 0.762717, 0.780686, 0.798971, 0.817574, 0.836499,
-    0.855751, 0.875334, 0.895251, 0.915507, 0.936105, 0.957051,
-    0.978348, 1.000000
-};
-#endif
 
 static inline float
 oscillator(float *pos, float omega, float deltat,
@@ -328,12 +222,8 @@ xsynth_voice_render(xsynth_synth_t *synth, xsynth_voice_t *voice,
     unsigned char lfo_waveform = lrintf(*(synth->lfo_waveform));
     float         lfo_amount_o = *(synth->lfo_amount_o);
     float         lfo_amount_f = *(synth->lfo_amount_f);
-    float         eg1_amp = qdB_to_amplitude(velocity_to_attenuation[voice->velocity] *
-                                             *(synth->eg1_vel_sens));
     float         eg1_rate_level[3], eg1_one_rate[3];
     float         eg1_amount_o = *(synth->eg1_amount_o);
-    float         eg2_amp = qdB_to_amplitude(velocity_to_attenuation[voice->velocity] *
-                                             *(synth->eg2_vel_sens));
     float         eg2_rate_level[3], eg2_one_rate[3];
     float         eg2_amount_o = *(synth->eg2_amount_o);
     float         qres = 0.005 + (1.995f - *(synth->vcf_qres)) * voice->pressure;
@@ -406,8 +296,8 @@ xsynth_voice_render(xsynth_synth_t *synth, xsynth_voice_t *voice,
         /* --- VCO 2 section */
 
         omega2_t = omega2 *
-                   (1.0f + eg1 * eg1_amount_o * eg1_amp) *
-                   (1.0f + eg2 * eg2_amount_o * eg2_amp) *
+                   (1.0f + eg1 * eg1_amount_o) *
+                   (1.0f + eg2 * eg2_amount_o) *
                    (1.0f + lfo * lfo_amount_o);
 
         osc2 = oscillator(&osc2_pos, omega2_t, deltat2, osc2_waveform, osc2_pw, &sync_flag2);
@@ -420,7 +310,7 @@ xsynth_voice_render(xsynth_synth_t *synth, xsynth_voice_t *voice,
 
         /* --- VCF section - Hal Chamberlin's state variable filter */
 
-        freqcut = (freqkey + freqeg1 * eg1 * eg1_amp + freqeg2 * eg2 * eg2_amp) * (1.0f + lfo * lfo_amount_f);
+        freqcut = (freqkey + freqeg1 * eg1 + freqeg2 * eg2) * (1.0f + lfo * lfo_amount_f);
 
         if (freqcut > VCF_FREQ_MAX) freqcut = VCF_FREQ_MAX;
 
@@ -438,7 +328,7 @@ xsynth_voice_render(xsynth_synth_t *synth, xsynth_voice_t *voice,
 
         /* --- VCA section */
 
-        output *= eg1 * eg1_amp * vol_out;
+        output *= eg1 * vol_out;
 
         /* mix voice output into output buffer */
         out[sample] += output;
