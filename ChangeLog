@@ -1,4 +1,4 @@
-2004-!FIX! version 0.1.0
+2004-07-16 version 0.1.0
 
 * extended documentation.
 * fixed duplicate free of synth->patches [Chris Cannam].
@@ -7,6 +7,7 @@
     to UI as argv[4].
 * temporary patch bank saves now go to ~/.xsynth-dssi/.
 * fixed mis-interpolation bug (lrintf() rounds, not floors....)
+* added 'exiting' method.
 
 2004-05-22 initial alpha release ("v0.01")
 

@@ -49,6 +49,7 @@
 lo_address osc_host_address;
 char *     osc_configure_path;
 char *     osc_control_path;
+char *     osc_exiting_path;
 char *     osc_hide_path;
 char *     osc_midi_path;
 char *     osc_program_path;
@@ -62,6 +63,8 @@ xsynth_patch_t *patches = NULL;
 char            patches_tmp_filename[PATH_MAX];
 
 int last_configure_load_was_from_tmp;
+
+int host_requested_quit = 0;
 
 /* ==== a couple things that liblo oughta have ==== */
 
@@ -127,7 +130,11 @@ osc_action_handler(const char *path, const char *types, lo_arg **argv,
     if (!strcmp(user_data, "show")) {
 
         /* GDB_MESSAGE(GDB_OSC, " osc_action_handler: received 'show' message\n"); */
-        gtk_widget_show(main_window);
+        if (!GTK_WIDGET_MAPPED(main_window))
+            gtk_widget_show(main_window);
+        else
+            gdk_window_raise(main_window->window);
+
 
     } else if (!strcmp(user_data, "hide")) {
 
@@ -137,6 +144,7 @@ osc_action_handler(const char *path, const char *types, lo_arg **argv,
     } else if (!strcmp(user_data, "quit")) {
 
         /* GDB_MESSAGE(GDB_OSC, " osc_action_handler: received 'quit' message\n"); */
+        host_requested_quit = 1;
         gtk_main_quit();
 
     } else {
@@ -283,6 +291,7 @@ main(int argc, char *argv[])
     osc_host_address = lo_address_new(host, port);
     osc_configure_path = osc_build_path(path, "/configure");
     osc_control_path   = osc_build_path(path, "/control");
+    osc_exiting_path   = osc_build_path(path, "/exiting");
     osc_hide_path      = osc_build_path(path, "/hide");
     osc_midi_path      = osc_build_path(path, "/midi");
     osc_program_path   = osc_build_path(path, "/program");
@@ -334,6 +343,11 @@ main(int argc, char *argv[])
 
     /* GTK+ cleanup */
     gdk_input_remove(osc_server_socket_tag);
+
+    /* say bye-bye */
+    if (!host_requested_quit) {
+        lo_send(osc_host_address, osc_exiting_path, "");
+    }
 
     /* clean up patches */
     if (patches) free(patches);

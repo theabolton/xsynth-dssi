@@ -18,6 +18,11 @@
  * MA 02111-1307, USA.
  */
 
+/* This program reads an Xsynth-DSSI patch file, and outputs it
+ * in C structure format suitable for include in
+ * gui_friendly_patches.c
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -47,9 +52,7 @@ xsynth_voice_write_patch_as_c(FILE *file, xsynth_patch_t *patch)
 {
     int i;
 
-    fprintf(file, "    /* Xsynth-dssi patch (was bank %lu, program %lu) */\n",
-            patch->descriptor.Bank, patch->descriptor.Program);
-    fprintf(file, "    {\n        { 0, 0, NULL },\n");
+    fprintf(file, "    {\n");
 
     fprintf(file, "        \"");
     for (i = 0; i < 30; i++) {
@@ -209,9 +212,6 @@ xsynth_voice_read_patch(FILE *file, xsynth_patch_t *patch, unsigned long bank,
     if (strcmp(buf2, "end")) return 0;
 
     memcpy(patch, &tmp, sizeof(xsynth_patch_t));
-    patch->descriptor.Bank = bank;
-    patch->descriptor.Program = program;
-    patch->descriptor.Name = (const char *)patch->name;
 
     return 1;  /* -FIX- error handling yet to be implemented */
 }

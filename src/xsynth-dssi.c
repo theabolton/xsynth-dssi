@@ -247,9 +247,6 @@ xsynth_configure(LADSPA_Handle instance, const char *key, const char *value)
  *
  * implements DSSI (*get_program)()
  */
-// !FIX! get_program():
-#define DO_GET_PROGRAM_THE_THIRD_WAY 1
-#ifdef DO_GET_PROGRAM_THE_THIRD_WAY
 const DSSI_Program_Descriptor *
 xsynth_get_program(LADSPA_Handle instance, unsigned long index)
 {
@@ -269,34 +266,6 @@ xsynth_get_program(LADSPA_Handle instance, unsigned long index)
     }
     return NULL;
 }
-#else /* second way: */
-int
-xsynth_get_program(LADSPA_Handle instance, unsigned long index,
-                   DSSI_Program_Descriptor *pd)
-{
-    xsynth_synth_t *synth = (xsynth_synth_t *)instance;
-
-    XDB_MESSAGE(XDB_DSSI, " xsynth_get_program called with %lu\n", index);
-    /* -FIX- no support for banks yet, so all patches are in bank 0 */
-    if (!synth->patch_count) {
-        if (index) return 0;
-        if (pd) {
-            pd->Bank = 0;
-            pd->Program = 0;
-            pd->Name = strdup("init voice");
-        }
-        return 1;
-    }
-    if (synth->patches && index < synth->patch_count) {
-        if (pd) {
-            xsynth_synth_set_program_descriptor(synth, pd, 0, index);
-            pd->Name = strdup(pd->Name);
-        }
-        return 1;
-    }
-    return 0;
-}
-#endif
 
 /*
  * xsynth_select_program

@@ -23,6 +23,13 @@
  * MA 02111-1307, USA.
  */
 
+/*
+ * This program will read a patch file saved by Xsynth 1.0.2 and output
+ * it in a form suitable for loading into Xsynth-DSSI.  Example usage:
+ *
+ * $ dump_old_xsynth_patch mypatch.Xpatch >mypatch.Xsynth
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -83,10 +90,6 @@ xsynth_voice_import_patch(xsynth_patch_t *xsynth_patch,
                           unsigned char *old_patch, int unpack_name,
                           unsigned long bank, unsigned long program)
 {
-    /* Initialize DSSI_Program_Descriptor */
-    xsynth_patch->descriptor.Bank = bank;
-    xsynth_patch->descriptor.Program = program;
-    xsynth_patch->descriptor.Name = xsynth_patch->name;
     if (!unpack_name) {
         strcpy(xsynth_patch->name, "imported patch");
     }
@@ -107,7 +110,7 @@ xsynth_voice_import_patch(xsynth_patch_t *xsynth_patch,
     xsynth_patch->lfo_amount_f      = le_float(old_patch + 52);
 
     /* BALANCE */
-    xsynth_patch->balance           = le_float(old_patch + 60);
+    xsynth_patch->osc_balance       = le_float(old_patch + 60);
 
     /* PORTAMENTO */
     /* glide_time: compensate for different control-value-recalulation rates */
@@ -144,13 +147,13 @@ xsynth_voice_import_patch(xsynth_patch_t *xsynth_patch,
 
     /* Buttons */
     xsynth_patch->osc_sync          = old_patch[207];
-    xsynth_patch->pole4             = old_patch[208];
+    xsynth_patch->vcf_4pole         = old_patch[208];
 
     /* Name */
     if (unpack_name) {
         int i;
 
-        for (i = 0; i < 15; i++) {
+        for (i = 0; i < 15; i++) {  /* Yes, 15: old banks had only 15 character names */
             xsynth_patch->name[i] = *(old_patch + 209 + i);
         }
         xsynth_patch->name[15] = '\0';
@@ -162,12 +165,11 @@ xsynth_voice_write_patch(FILE *file, xsynth_patch_t *patch)
 {
     int i;
 
-    fprintf(file, "# Xsynth-dssi patch (was bank %lu, program %lu)\n",
-            patch->descriptor.Bank, patch->descriptor.Program);
+    fprintf(file, "# Xsynth-dssi patch\n");
     fprintf(file, "xsynth-dssi patch format 0 begin\n");
 
     fprintf(file, "name ");
-    for (i = 0; i < 15; i++) {
+    for (i = 0; i < 30; i++) {
         if (!patch->name[i]) {
             break;
         } else if (patch->name[i] < 33 || patch->name[i] > 126 ||
@@ -184,7 +186,7 @@ xsynth_voice_write_patch(FILE *file, xsynth_patch_t *patch)
     fprintf(file, "osc2 %.6f %d %.6f\n", patch->osc2_pitch,
             patch->osc2_waveform, patch->osc2_pulsewidth);
     fprintf(file, "sync %d\n", patch->osc_sync);
-    fprintf(file, "balance %.6f\n", patch->balance);
+    fprintf(file, "balance %.6f\n", patch->osc_balance);
 
     fprintf(file, "lfo %.6f %d %.6f %.6f\n", patch->lfo_frequency,
             patch->lfo_waveform, patch->lfo_amount_o, patch->lfo_amount_f);
@@ -199,7 +201,7 @@ xsynth_voice_write_patch(FILE *file, xsynth_patch_t *patch)
             patch->eg2_amount_o, patch->eg2_amount_f);
 
     fprintf(file, "vcf %.6f %.6f %d\n", patch->vcf_cutoff, patch->vcf_qres,
-            patch->pole4);
+            patch->vcf_4pole);
 
     fprintf(file, "glide %.6f\n", patch->glide_time);
     fprintf(file, "volume %.6f\n", patch->volume);

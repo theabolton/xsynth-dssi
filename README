@@ -3,10 +3,6 @@
                     A software synthesizer plugin  for the
                         Disposable Soft Synth Interface
 
-NOTE
-====
-This is an ALPHA snapshot.  Please do not redistribute.
-
 Introduction
 ============
 Xsynth-DSSI is a classic-analog (VCOs-VCF-VCA) style software

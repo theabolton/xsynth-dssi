@@ -1,5 +1,5 @@
-Before first release
-====================
+Needs to be done
+================
 
 - improve automake/autoconf setup (autoscan?), use pkgconfig for
     liblo, improve handling of dssi.h until such time as we can
@@ -7,18 +7,11 @@ Before first release
 
 - implement osc_configure_handler()
 
-- add 'exiting' method
-
-- add some documentation to the stuff in extra/, plus make sure the
-    dump programs are using the current format.
+- make sure the dump programs in extra/ are using the current format.
 
 - clean up all '!FIX!'es
 
 - complete documention
-    
-
-Needs to be done
-================
 
 - GUI: fix blinking of Patches clist when patch edit widgets are
     updated
