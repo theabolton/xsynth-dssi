@@ -476,11 +476,11 @@ xsynth_synth_handle_load(xsynth_synth_t *synth, const char *value)
     /* -FIX- implement bank support */
     if (!synth->patches) {
         if (!(synth->patches = (xsynth_patch_t *)malloc(128 * sizeof(xsynth_patch_t))))
-            return dssi_configure_message("load error: could not allocate memory for patch bank");
+            return dssi_configure_message("load error: could not allocate memory for patch bank from file '%s'", value);
     }
 
     if ((fh = fopen(value, "rb")) == NULL) {
-        return dssi_configure_message("load error: could not open file");
+        return dssi_configure_message("load error: could not open file '%s'", value);
     }
     while (count < 128 &&
            xsynth_data_read_patch(fh, &synth->patches[count], 0, count))
@@ -488,7 +488,7 @@ xsynth_synth_handle_load(xsynth_synth_t *synth, const char *value)
     fclose(fh);
 
     if (!count) {
-        return dssi_configure_message("load error: no patches recognized");
+        return dssi_configure_message("load error: no patches recognized in patch file '%s'", value);
     }
     if (count > synth->patch_count)
         synth->patch_count = count;
