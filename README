@@ -3,14 +3,20 @@
                     A software synthesizer plugin  for the
                         Disposable Soft Synth Interface
 
+Note
+====
+This is version 0.1.3 of Xsynth-DSSI.  A newer, better version
+exists. The only reason you will want to use this version is if you
+need compatibility with existing 0.1.x sessions.
+
 Introduction
 ============
 Xsynth-DSSI is a classic-analog (VCOs-VCF-VCA) style software
 synthesizer which operates as a plugin for the Disposable Soft Synth
-Interface (DSSI).  DSSI is a proposal for a plugin API for software
-instruments (soft synths) with user interfaces, permitting them to
-be hosted in-process by Linux audio applications.  More information
-on DSSI can be found at:
+Interface (DSSI).  DSSI is a plugin API for software instruments
+(soft synths) with user interfaces, permitting them to be hosted
+in-process by Linux audio applications.  More information on DSSI
+can be found at:
 
   http://dssi.sourceforge.net/
 
@@ -24,24 +30,34 @@ of the following should you find Xsynth-DSSI useful:
     - copies of or links to music you've created with Xsynth-DSSI.
     - any patches you create for Xsynth-DSSI.
     - suggestions for improving Xsynth-DSSI.
+    - offers of paying work writing this sort of code!
 
-Xsynth-DSSI uses the sound generation code from Steve Brooke's Xsynth
-1.0.2, which is available (also under GPL) at:
+Xsynth-DSSI is based on Steve Brooke's Xsynth 1.0.2, which is
+available (also under GPL) at:
 
   http://www.ibiblio.org/pub/Linux/apps/sound/misc/xsynth-1.0.2.tar.gz
 
 Xsynth-DSSI retains the basic synthesis model of Xsynth, while
-extending it to polyphonic operation as well as operation as a DSSI
-plugin.
+adding the following features:
+    - operation as a DSSI plugin,
+    - polyphonic operation,
+    - band-limited oscillators,
+    - a new, more stable filter mode, and
+    - velocity-sensitive envelopes.
 
 Requirements
 ============
 Xsynth-DSSI requires the following:
 
-    - GTK+ version 1.2.x.
-    - liblo version 0.5 or 0.6, a library implementing the Open
+    - DSSI version 0.9 or greater, available from the
+        dssi.sourceforge.net address above.
+    - liblo version 0.12 or later, a library implementing the Open
         Sound Control protocol, available at
         http://plugin.org.uk/liblo/
+    - pkgconfig with PKG_CONFIG_PATH set appropriately to pick up
+        DSSI and liblo.
+    - GTK+ version 1.2 or 2.x.  (If GTK+ is not found, the plugin
+        will be built without the GUI.)
     - the LADSPA v1.x SDK.
     - the ALSA headers (DSSI plugins use ALSA structures, but not
         the actual drivers, so you don't necessarily need the
@@ -54,70 +70,68 @@ Xsynth-DSSI requires the following:
 
 Installation
 ============
-The enclosed file INSTALL provides generic installation instructions
-which assume I've invoked the proper automake/autoconf magic --
-which I know I haven't completely done yet.  Hopefully you should be
-able to:
+The generic installation instructions in the enclosed file INSTALL
+aren't particularly helpful, so try this instead:
 
 1. Unpack the tar file.
 
-2. Execute './configure' with CFLAGS pointing to your liblo headers
-    and LDFLAGS pointing to your liblo library, if they're not in
-    your compiler's default search paths.  For example, I do:
-    
-    $ ./configure --prefix=/opt/audio CFLAGS=-I/opt/audio/include \
-        LDFLAGS=-L/opt/audio/lib
+2. Make sure PKG_CONFIG_PATH is set correctly to locate the
+    dssi.pc and liblo.pc pkgconfig files.  On many systems, this
+    will be:
 
+    $ PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+    $ export PKG_CONFIG_PATH
+
+3. 'cd' into the package directory and execute './configure'.
     configure will add '-Wall' and my favorite optimizations to
     CFLAGS for you if you don't include any '-Wall' or '-O' options.
     If you're using gcc and wish to provide your own optimization
     flags, you MUST at least use '-finline' and a non-zero '-O' flag
     to get decent results.
 
-3. Enable debugging information if you desire: edit the file
+4. Enable debugging information if you desire: edit the file
     src/xsynth.h, and define XSYNTH_DEBUG as explained in the
     comments.
     
-4. Do 'make'.  Hopefully it should build without warnings (or
+5. Do 'make'.  Hopefully it should build without warnings (or
     errors.)
 
-5. 'make install' will install the following:
+6. 'make install' will install the following:
 
     <prefix>/lib/dssi/xsynth-dssi.so
     <prefix>/lib/dssi/xsynth-dssi/Xsynth_gtk
     <prefix>/share/xsynth-dssi/factory_patches.Xsynth
-    <prefix>/share/xsynth-dssi/patch_library.Xsynth
+    <prefix>/share/xsynth-dssi/version_0.1_patches.Xsynth
 
 Feedback on your experiences building Xsynth-DSSI is appreciated.
 
 Operation
 =========
-To run the Xsynth-DSSI plugin under the DSSI example host provided
-in the dssi-0.3.tar.gz distribution, I do the following:
+To run the Xsynth-DSSI plugin under the jack-dssi-host provided in
+the DSSI distribution, I do the following:
 
 1. Start JACK.
 
-2. Start the DSSI example host, supplying the correct plugin path
+2. Start jack-dssi-host, supplying the correct plugin path
     and filename (substitute <prefix> as appropriate):
 
-    $ DSSI_PATH=<prefix>/lib/dssi dssi_example_host xsynth-dssi.so
+    $ DSSI_PATH=<prefix>/lib/dssi sudo jack-dssi-host xsynth-dssi.so
 
-    The example host should start, and moments later the Xsynth-DSSI
+    jack-dssi-host should start, and moments later the Xsynth-DSSI
     graphic user interface should appear.
 
-3. Use aconnect or kaconnect to connect the example host to a MIDI
+3. Use aconnect or kaconnect to connect jack-dssi-host to a MIDI
    source, such as vkeybd.
 
-4. Begin playing sounds!  If you get no response, try selecting the
-    'Patch Edit' tab in the Xsynth-DSSI GUI, and click the 'Send
-    Test Note' button.  This sends a note directly via the host to
-    the plugin, so if you hear sound now, look for a problem between
-    the example host and your MIDI source.  If you still don't hear
-    sound, I'd look for a problem between the example host and your
-    output device.  If you continue having trouble, you might
-    recompile with XSYNTH_DEBUG bit 2 set, which will cause the
-    plugin to continuously output a quiet buzz to help debug your
-    outgoing signal path.
+4. Begin playing sounds!  If you get no response, try clicking the
+    'Send Test Note' button in the Xsynth-DSSI GUI. This sends a
+    note directly via the host to the plugin, so if you hear sound
+    now, look for a problem between the example host and your MIDI
+    source.  If you still don't hear sound, I'd look for a problem
+    between the example host and your output device.  If you
+    continue having trouble, you might recompile with XSYNTH_DEBUG
+    bit 2 set, which will cause the plugin to continuously output a
+    quiet buzz to help debug your outgoing signal path.
 
 Xsynth-DSSI starts up with a small set of sound presets, or
 'patches', that you can select either by selecting the GUI 'Patches'
@@ -129,7 +143,7 @@ File Menu
 You may load additional patches by selecting 'Load Patch Bank...'
 from the GUI 'File' menu, and pointing the file selection dialog to
 a Xsynth-DSSI patch bank file.  One such file is patch_library.Xsynth,
-which was installed with the plugin, in <prefix>/share/xsynth-dssi/.
+which is installed with the plugin, in <prefix>/share/xsynth-dssi/.
 After selecting a patch bank file, you will be asked at which
 program number to begin loading the new patches.  This allows you to
 overwrite the existing patches, or to add the new patches at the
@@ -145,6 +159,14 @@ Patches Tab
 Selecting the 'Patches' tab displays a list of all the patches loaded.
 Clicking on the name of a patch causes that patch to be selected.
 
+Test Note
+---------
+The 'Test Note' controls allow you to send a test note to the
+plugin, by clicking on the 'Send Test Note' button.  Changing the
+'key' and 'velocity' sliders will change the pitch and velocity of
+the test note.  A key of 60 is generally considered to be
+'Middle C'.
+
 Patch Edit Tab
 --------------
 This tab allows you to edit patches.
@@ -154,10 +176,17 @@ VCF, and VOLUME sections all offer real-time control of the
 synthesis parameters used by the plugin to create sound.  The voice
 architecture is described in more detail below.
 
-The TEST NOTE controls allow you to send a test note to the plugin,
-by clicking on the 'Send Test Note' button.  Changing the 'Test
-Note' slider will change the pitch of the test note, with 60
-generally considered to be 'Middle C'.
+Note that the rotary knobs may be manipulated in several ways:
+    - Clicking and dragging a knob with mouse button 1 sets the
+        value directly, but making the knob pointer point toward the
+        mouse pointer.
+    - Clicking and dragging a knob with mouse button 3 allows
+        incremental adjustment of the knob's current value (without
+        a sudden jump.) Horizontal movement produces large variation
+        in the knob value, while vertical movement allows finer
+        control.
+    - Clicking on a knob with buttons 1 and 3 increment and
+        decrement the knob value.
 
 The NAME text box allows you to change the name of a patch.
 
@@ -170,12 +199,15 @@ will be displayed, to save your changes to a new slot.
 
 Configuration Tab
 -----------------
+Tuning: Sets the tuning of this instance of the plugin, as Hz for
+    A-above-middle-C.
+
 Polyphony: Sets the maximum polyphony for this instance of the
     plugin.  If you attempt to play more notes than this setting,
     already-playing notes will be killed so that newer notes can be
     played.  If you are getting xruns, try reducing this setting.
 
-Monophonic modes:
+Monophonic Mode:
     'Off'  - polyphonic operation.
     'On'   - monophonic operation, where the envelopes are
              retriggered upon each incoming note on event. 
@@ -187,9 +219,105 @@ Monophonic modes:
              retriggered at each note on, and upon note off when
              other keys are still held.
 
+Pitch Bend Range: Set the pitch bend range, from 0 to 12 semitones,
+    for this instance of the plugin.
+
 Voice Architecture
 ==================
-!FIX! this section needs to be rewritten, or maybe just written.
+Xsynth-DSSI models a simple analog synthesizer, where two
+oscillators (VCO1 and VCO2) are mixed (MIXER) and fed to a low pass
+filter (VCF), which then feeds an amplifier (VCA) controlling the
+output volume:
+
+    VCO1
+      |
+      v
+    MIXER --> VCF --> VCA --> output
+      ^
+      |
+    VCO2
+
+Modulation of these elements is possible using two envelope
+generators (EG1 and EG2), a low-frequency oscillator (LFO), and the
+MIDI key and velocity.
+
+Oscillators VCO1 and VCO2
+-------------------------
+The frequencies of VCO1 and VCO2 are controlled by the MIDI key,
+plus the value of the 'pitch' control.  Compared to a base pitch of
+'0', a value of '5' is one octave higher, and a value of '10' is two
+octaves higher.
+
+In any of the monophonic modes, the pitch from the MIDI key is
+lagged by the PORTAMENTO 'glide' value.
+
+The frequency of VCO2 is also affected by the 'pitch mod' amounts
+from EG1, EG2 and the LFO.
+
+The waveforms available for both oscillators are:
+    0. sine
+    1. triangle
+    2. ascending sawtooth
+    3. descending sawtooth
+    4. square
+    5. variable-width rectangle
+    6. variable-slope triangle
+
+The 'pw/slope' control sets the width and slope of waveforms 5 and
+6, respectively.  It has no effect when waveforms 0 through 4 are
+selected.
+
+VCO2 may be 'hard synced' the VCO1, so that its phase resets
+whenever VCO1 completes a cycle, by selecting the 'osc sync'
+checkbox.
+
+MIXER
+-----
+A 'balance' setting of '0' causes the mixer to output only VCO1, a
+setting of '10' outputs only VCO2, and a setting of '5' results in
+an equal mix of both.
+
+Low Pass Filter VCF
+-------------------
+The VCF cutoff frequency is set by the 'cutoff' control, plus the
+'filer mod' amounts from EG1, EG2, and LFO.
+
+The filter resonance, or 'Q', is set by the 'resonance' control.  Be
+aware that the filter is not always stable when the resonance is
+very high, and when the resonance is very low but the cutoff is very
+high.
+
+The 'mode' option menu controls which of the three filters is used:
+    '12 db/oct' - the original Xsynth two-pole filter.
+    '24 db/oct' - the original Xsynth four-pole filter.
+    'MCVLPF-3'  - Fons Adriaensen's MCVLPF-3, modeled after the
+                  voltage-controlled lowpass filter invented by
+                  R. A. Moog.
+
+Amplifier VCA
+-------------
+The gain of the VCA set by both the 'volume' control and the
+envelope generator EG1.
+
+Envelope Generators EG1 and EG2
+-------------------------------
+The envelope generators are classic 'ADSR'-style: the 'attack'
+control sets the time it takes from key-on for the envelope to reach
+full output, the 'decay' control sets the time it then takes to fall
+to the 'sustain' level, where it stays until key-off.  The 'release'
+control sets the time it then takes to fall back to zero output.
+
+The 'vels sens' (velocity sensitivity) control determines the amount
+the envelope output is reduced by low MIDI velocities.  At a
+sensitivity of '0', the envelope always goes to full output.  At
+maximum MIDI velocity (127), the envelope always goes to full
+output.  Otherwise, the lower the velocity and higher the
+sensitivity, the greater the reduction of the envelope's output.
+
+Low-frequency Oscillator LFO
+----------------------------
+The duty cycle of the waveform 5 (rectangular) is fixed at 25% high,
+and waveform 6 (variable-slope triangular) is not available.
 
 MIDI Controller Mapping
 =======================
@@ -230,9 +358,12 @@ A. A certain grittiness has always been part of Xsynth's charm for
         output even when you're not playing anything, your plugin
         was probably compiled with the XDB_AUDIO debug bit set.  Fix
         that and recompile.
-    - Pitch too high: I haven't added band-limited oscillators to
-        the render code yet, so it does alias pretty badly on higher
-        notes.  Be patient, or help with the coding.
+    - Pitch too high: even with the band-limited oscillators, it is
+        possible to get audible aliasing on very high notes.  This
+        is especially true when using oscillator sync while VCO2 is
+        producing a sine wave, since the band-limiting technique
+        doesn't deal as well with waveforms having continuously
+        varying slope.
 
 Q. Ack! Things crashed.  Did I lose my patch edits?
 A. Check in ~/.xsynth-dssi/ -- they may be saved there.
@@ -242,10 +373,4 @@ Q. Why aren't the GUI slider values and the corresponding LADSPA
 A. The LADSPA port values are the actual numeric values used by the
     synthesis code, while the GUI slider values are all the 0-to-10
     values used in Steve Brookes' original Xsynth interface.
-
-Q. Why does the Patches list flash so horribly?
-A. Because I don't know GTK+ very well, and with my code the way it
-    is now, GTK+ insists on redrawing the Patches clist every time
-    another widget is updated.  If you know GTK+, please help me fix
-    this.
 

@@ -80,8 +80,7 @@ waveform_bit_to_number(unsigned char bit)
  */
 void
 gui_data_import_patch(xsynth_patch_t *xsynth_patch,
-                      unsigned char *old_patch, int unpack_name,
-                      unsigned long bank, unsigned long program)
+                      unsigned char *old_patch, int unpack_name)
 {
     if (!unpack_name) {
         strcpy(xsynth_patch->name, "imported patch");
@@ -142,7 +141,7 @@ gui_data_import_patch(xsynth_patch_t *xsynth_patch,
 
     /* Buttons */
     xsynth_patch->osc_sync          = old_patch[207];
-    xsynth_patch->vcf_4pole         = old_patch[208];
+    xsynth_patch->vcf_mode          = old_patch[208];
 
     /* Name */
     if (unpack_name) {
@@ -216,7 +215,7 @@ gui_data_write_patch(FILE *file, xsynth_patch_t *patch)
     }
 
     fprintf(file, "vcf %.6g %.6g %d\n", patch->vcf_cutoff, patch->vcf_qres,
-            patch->vcf_4pole);
+            patch->vcf_mode);
 
     fprintf(file, "glide %.6g\n", patch->glide_time);
     fprintf(file, "volume %.6g\n", patch->volume);
@@ -299,7 +298,7 @@ gui_data_load(const char *filename, int position, char **message)
         return 0;
     }
     while (index < 128 &&
-           xsynth_data_read_patch(fh, &patches[index], 0, index)) {
+           xsynth_data_read_patch(fh, &patches[index])) {
         count++;
         index++;
     }

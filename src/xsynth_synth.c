@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <pthread.h>
 
 #include <ladspa.h>
 
@@ -416,7 +417,7 @@ void
 xsynth_synth_select_program(xsynth_synth_t *synth, unsigned long bank,
                             unsigned long program)
 {
-    /* -FIX- no support for banks yet, so we just ignore the bank number */
+    /* -FIX- no support for banks yet */
     if (program >= 128) return;
     synth->current_program = program;
     if (program >= synth->patch_count) {
@@ -439,9 +440,13 @@ xsynth_data_friendly_patches(xsynth_synth_t *synth)
             return;
     }
 
+    pthread_mutex_lock(&synth->patches_mutex);
+
     memcpy(synth->patches, friendly_patches, friendly_patch_count * sizeof(xsynth_patch_t));
 
     synth->patch_count = friendly_patch_count;
+
+    pthread_mutex_unlock(&synth->patches_mutex);
 }
 
 /*
@@ -452,7 +457,7 @@ xsynth_synth_set_program_descriptor(xsynth_synth_t *synth,
                                     DSSI_Program_Descriptor *pd,
                                     unsigned long bank, unsigned long program)
 {
-    /* -FIX- no support for banks yet, so we just ignore the bank number */
+    /* -FIX- no support for banks yet */
     if (program >= 128 || program >= synth->patch_count || !synth->patches) {
         return 0;
     }
@@ -492,17 +497,23 @@ xsynth_synth_handle_load(xsynth_synth_t *synth, const char *value)
 	free(file);
         return dssi_configure_message("load error: could not open file '%s'", value);
     }
+
+    pthread_mutex_lock(&synth->patches_mutex);
+
     while (count < 128 &&
-           xsynth_data_read_patch(fh, &synth->patches[count], 0, count))
+           xsynth_data_read_patch(fh, &synth->patches[count]))
         count++;
     fclose(fh);
 
     if (!count) {
+        pthread_mutex_unlock(&synth->patches_mutex);
 	free(file);
         return dssi_configure_message("load error: no patches recognized in patch file '%s'", value);
     }
     if (count > synth->patch_count)
         synth->patch_count = count;
+
+    pthread_mutex_unlock(&synth->patches_mutex);
 
     if (strcmp(file, value)) {
 	char *rv = dssi_configure_message
@@ -552,11 +563,13 @@ xsynth_synth_handle_monophonic(xsynth_synth_t *synth, const char *value)
 
     } else {  /* one of the monophonic modes */
 
-        /* -FIX- potential race condition with audio thread; add mutex */
+        dssp_voicelist_mutex_lock(synth);
+
         if (!synth->monophonic) xsynth_synth_all_voices_off(synth);
         synth->monophonic = mode;
         synth->voices = 1;
 
+        dssp_voicelist_mutex_unlock(synth);
     }
 
     return NULL;
@@ -582,14 +595,54 @@ xsynth_synth_handle_polyphony(xsynth_synth_t *synth, const char *value)
         synth->voices = polyphony;
 
         /* turn off any voices above the new limit */
-        /* -FIX- potential race condition with audio thread; add mutex */
+
+        dssp_voicelist_mutex_lock(synth);
+
         for (i = polyphony; i < XSYNTH_MAX_POLYPHONY; i++) {
             voice = synth->voice[i];
             if (_PLAYING(voice)) {
                 xsynth_voice_off(voice);
             }
         }
+
+        dssp_voicelist_mutex_unlock(synth);
     }
+
+    return NULL;
+}
+
+/*
+ * xsynth_synth_handle_glide
+ */
+char *
+xsynth_synth_handle_glide(xsynth_synth_t *synth, const char *value)
+{
+    int mode = -1;
+
+    if (!strcmp(value, "legato"))        mode = XSYNTH_GLIDE_MODE_LEGATO;
+
+    if (mode == -1) {
+        return dssi_configure_message("error: glide value not recognized");
+    }
+
+    synth->glide = mode;
+
+    return NULL;
+}
+
+/*
+ * xsynth_synth_handle_bendrange
+ */
+char *
+xsynth_synth_handle_bendrange(xsynth_synth_t *synth, const char *value)
+{
+    int range = atoi(value);
+
+    if (range < 0 || range > 12) {
+        return dssi_configure_message("error: bendrange value out of range");
+    }
+    synth->pitch_wheel_sensitivity = range;
+    xsynth_synth_pitch_bend(synth, synth->pitch_wheel);  /* recalculate current pitch_bend */
 
     return NULL;
 }

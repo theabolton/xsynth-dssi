@@ -4,7 +4,6 @@ SUBDIRS = src
 
 EXTRA_DIST = \
 	autogen.sh \
-	extra/Xsynth_gtk.glade \
 	extra/dump_friendly_patches.c \
 	extra/dump_old_xsynth_patch.c \
 	extra/factory_patches.Xsynth \

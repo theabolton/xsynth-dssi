@@ -26,12 +26,32 @@
 #ifndef _XSYNTH_VOICE_H
 #define _XSYNTH_VOICE_H
 
+#include <string.h>
+
 #include <ladspa.h>
 #include "dssi.h"
 
 #include "xsynth_types.h"
 
-#define WAVE_POINTS 100
+/* maximum size of a rendering burst */
+#define XSYNTH_NUGGET_SIZE      64
+
+/* minBLEP constants */
+/* minBLEP table oversampling factor (must be a power of two): */
+#define MINBLEP_PHASES          64
+/* MINBLEP_PHASES minus one: */
+#define MINBLEP_PHASE_MASK      63
+/* length in samples of (truncated) step discontinuity delta: */
+#define STEP_DD_PULSE_LENGTH    72
+/* length in samples of (truncated) slope discontinuity delta: */
+#define SLOPE_DD_PULSE_LENGTH   71
+/* the longer of the two above: */
+#define LONGEST_DD_PULSE_LENGTH STEP_DD_PULSE_LENGTH
+/* MINBLEP_BUFFER_LENGTH must be at least XSYNTH_NUGGET_SIZE plus
+ * LONGEST_DD_PULSE_LENGTH, and not less than twice LONGEST_DD_PULSE_LENGTH: */
+#define MINBLEP_BUFFER_LENGTH  512
+/* delay between start of DD pulse and the discontinuity, in samples: */
+#define DD_SAMPLE_DELAY          4
 
 struct _xsynth_patch_t
 {
@@ -65,7 +85,7 @@ struct _xsynth_patch_t
     float         eg2_amount_f;
     float         vcf_cutoff;
     float         vcf_qres;
-    unsigned char vcf_4pole;
+    unsigned char vcf_mode;
     float         glide_time;
     float         volume;
 };
@@ -76,6 +96,15 @@ enum xsynth_voice_status
     XSYNTH_VOICE_ON,        /* has not received a note off event */
     XSYNTH_VOICE_SUSTAINED, /* has received note off, but sustain controller is on */
     XSYNTH_VOICE_RELEASED   /* had note off, not sustained, in final decay phase of envelopes */
+};
+
+struct blosc
+{
+    int   last_waveform,    /* persistent */
+          waveform,         /* comes from LADSPA port each cycle */
+          bp_high;          /* persistent */
+    float pos,              /* persistent */
+          pw;               /* comes from LADSPA port each cycle */
 };
 
 /*
@@ -96,17 +125,24 @@ struct _xsynth_voice_t
     /* persistent voice state */
     float         prev_pitch,
                   target_pitch,
-                  lfo_pos,
-                  osc1_pos,
-                  osc2_pos,
-                  eg1,
+                  lfo_pos;
+    struct blosc  osc1,
+                  osc2;
+    float         eg1,
                   eg2,
                   delay1,
                   delay2,
                   delay3,
-                  delay4;
+                  delay4,
+                  c5;
     unsigned char eg1_phase,
                   eg2_phase;
+    int           osc_index;       /* shared index into osc_audio */
+    float         osc_audio[MINBLEP_BUFFER_LENGTH];
+    float         osc_sync[XSYNTH_NUGGET_SIZE]; /* buffer for sync subsample offsets */
+    float         osc2_w_buf[XSYNTH_NUGGET_SIZE];
+    float         freqcut_buf[XSYNTH_NUGGET_SIZE];
+    float         vca_buf[XSYNTH_NUGGET_SIZE];
 };
 
 #define _PLAYING(voice)    ((voice)->status != XSYNTH_VOICE_OFF)
@@ -115,7 +151,12 @@ struct _xsynth_voice_t
 #define _RELEASED(voice)   ((voice)->status == XSYNTH_VOICE_RELEASED)
 #define _AVAILABLE(voice)  ((voice)->status == XSYNTH_VOICE_OFF)
 
-extern float          xsynth_pitch[128];
+extern float xsynth_pitch[128];
+
+typedef struct { float value, delta; } float_value_delta;
+extern float_value_delta step_dd_table[];
+
+extern float slope_dd_table[];
 
 /* xsynth_voice.c */
 xsynth_voice_t *xsynth_voice_new(xsynth_synth_t *synth);
@@ -123,6 +164,8 @@ void            xsynth_voice_note_on(xsynth_synth_t *synth,
                                      xsynth_voice_t *voice,
                                      unsigned char key,
                                      unsigned char velocity);
+void            xsynth_voice_remove_held_key(xsynth_synth_t *synth,
+                                             unsigned char key);
 void            xsynth_voice_note_off(xsynth_synth_t *synth,
                                       xsynth_voice_t *voice,
                                       unsigned char key,
@@ -152,6 +195,8 @@ static inline void
 xsynth_voice_off(xsynth_voice_t* voice)
 {
     voice->status = XSYNTH_VOICE_OFF;
+    /* silence the oscillator buffer for the next use */
+    memset(voice->osc_audio, 0, MINBLEP_BUFFER_LENGTH * sizeof(float));
     /* -FIX- decrement active voice count? */
 }
 

@@ -250,6 +250,9 @@ static void gtk_knob_init (GtkKnob *knob) {
   knob->saved_x = knob->saved_y = 0;
   knob->timer = 0;
   knob->pixmap = NULL;
+  knob->mask = NULL;
+  knob->mask_gc = NULL;
+  knob->red_gc = NULL;
   knob->old_value = 0.0;
   knob->old_lower = 0.0;
   knob->old_upper = 0.0;
@@ -429,7 +432,8 @@ static gint gtk_knob_expose(GtkWidget *widget, GdkEventExpose *event) {
   knob = GTK_KNOB(widget);
 
   /* gdk_window_clear_area(widget->window, 0, 0, widget->allocation.width, widget->allocation.height); */
-  /* Ack! This still flashes as the filled-arc is being drawn.  Can we turn off screen update until we're drawn? */
+  /* Ack! This still flashes as the filled-arc is being drawn (GTK+ 1.2.x only).  Can we turn off
+   * screen update until we're drawn? Or would we have to double-buffer? */
   gdk_draw_pixmap(widget->window, widget->style->bg_gc[widget->state], knob->pixmap,
                   0, 0, 0, 0, KNOB_SIZE, KNOB_SIZE);
 
@@ -441,7 +445,7 @@ static gint gtk_knob_expose(GtkWidget *widget, GdkEventExpose *event) {
     dx = -1.5 * dx + 1.25;
 
     gdk_draw_arc (widget->window, knob->red_gc, TRUE,
-                  1, 1, KNOB_SIZE - 3, KNOB_SIZE - 2,
+                  1, 1, KNOB_SIZE - 4, KNOB_SIZE - 2,
                   dx * 180.f * 64.f, (1.25f - dx) * 180.f * 64.f);
     gdk_draw_pixmap(widget->window, knob->mask_gc, knob->pixmap,
                     0, 0, 0, 0, KNOB_SIZE, KNOB_SIZE);

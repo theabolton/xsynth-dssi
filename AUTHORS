@@ -14,6 +14,16 @@ Much of the sound generation code and bits of the user interface
 code comes from Xsynth v1.0.2, copyright (c) 1999 S. J. Brookes,
 under the GNU General Public License version 2.
 
+Portions of the minBLEP oscillator code are based on Fons
+Adriaensen's VCO-plugins v0.3.0, copyright (c) 2003 under the GNU
+General Public License version 2.  (Thanks also to Daniel Werner for
+his public domain minBLEP generation code, upon which I based my
+discontinuity-delta generation code).
+
+The MVCLPF-3 filter was taken directly from Fons Adriaensen's
+MCP-plugins v0.3.0, copyright (c) 2003 under the GNU General Public
+License version 2.
+
 Major portions of the event handling code are derived from
 Fluidsynth, copyright (c) 2003 Peter Hanappe and others, under the
 GNU General Public License version 2.

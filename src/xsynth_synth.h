@@ -26,18 +26,20 @@
 #ifndef _XSYNTH_SYNTH_H
 #define _XSYNTH_SYNTH_H
 
+#include <pthread.h>
+
 #include <ladspa.h>
 #include "dssi.h"
 
 #include "xsynth.h"
 #include "xsynth_types.h"
 
-#define XSYNTH_NUGGET_SIZE    64
-
 #define XSYNTH_MONO_MODE_OFF  0
 #define XSYNTH_MONO_MODE_ON   1
 #define XSYNTH_MONO_MODE_ONCE 2
 #define XSYNTH_MONO_MODE_BOTH 3
+
+#define XSYNTH_GLIDE_MODE_LEGATO   0
 
 /*
  * xsynth_synth_t
@@ -53,13 +55,19 @@ struct _xsynth_synth_t {
     int             polyphony;         /* requested polyphony, must be <= XSYNTH_MAX_POLYPHONY */
     int             voices;            /* current polyphony, either requested polyphony above or 1 while in monophonic mode */
     int             monophonic;        /* true if operating in monophonic mode */
+    int             glide;             /* current glide mode */
+    float           last_noteon_pitch; /* glide start pitch for non-legato modes */
     signed char     held_keys[8];      /* for monophonic key tracking, an array of note-ons, most recently received first */
     
+    pthread_mutex_t voicelist_mutex;
+    int             voicelist_mutex_grab_failed;
+
     xsynth_voice_t *voice[XSYNTH_MAX_POLYPHONY];
 
+    pthread_mutex_t patches_mutex;
     unsigned int    patch_count;
     xsynth_patch_t *patches;
-    // int          current_bank;
+    int             pending_program_change;
     int             current_program;
     char           *project_dir;
 
@@ -103,7 +111,7 @@ struct _xsynth_synth_t {
     LADSPA_Data    *eg2_amount_f;
     LADSPA_Data    *vcf_cutoff;
     LADSPA_Data    *vcf_qres;
-    LADSPA_Data    *vcf_4pole;
+    LADSPA_Data    *vcf_mode;
     LADSPA_Data    *glide_time;
     LADSPA_Data    *volume;
     LADSPA_Data    *tuning;
@@ -132,12 +140,19 @@ int   xsynth_synth_set_program_descriptor(xsynth_synth_t *synth,
                                           unsigned long bank,
                                           unsigned long program);
 char *xsynth_synth_handle_load(xsynth_synth_t *synth, const char *value);
-char *xsynth_synth_handle_monophonic(xsynth_synth_t *synth, const char *value);
 char *xsynth_synth_handle_polyphony(xsynth_synth_t *synth, const char *value);
+char *xsynth_synth_handle_monophonic(xsynth_synth_t *synth, const char *value);
+char *xsynth_synth_handle_glide(xsynth_synth_t *synth, const char *value);
+char *xsynth_synth_handle_bendrange(xsynth_synth_t *synth, const char *value);
 char *xsynth_synth_handle_project_dir(xsynth_synth_t *synth, const char *value);
 void  xsynth_synth_render_voices(xsynth_synth_t *synth, LADSPA_Data *out,
                                  unsigned long sample_count,
                                  int do_control_update);
+
+/* in xsynth-dssi.c: */
+int   dssp_voicelist_mutex_lock(xsynth_synth_t *synth);
+int   dssp_voicelist_mutex_unlock(xsynth_synth_t *synth);
+char *dssi_configure_message(const char *fmt, ...);
 
 /* these come right out of alsa/asoundef.h */
 #define MIDI_CTL_MSB_MODWHEEL           0x01    /**< Modulation */

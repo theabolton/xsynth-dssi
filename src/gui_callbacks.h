@@ -46,6 +46,7 @@ void on_patches_selection(GtkWidget *clist, gint row, gint column,
 void on_voice_slider_change(GtkWidget *widget, gpointer data);
 void on_voice_detent_change(GtkWidget *widget, gpointer data);
 void on_voice_onoff_toggled(GtkWidget *widget, gpointer data);
+void on_vcf_mode_activate(GtkWidget *widget, gpointer data);
 void on_test_note_slider_change(GtkWidget *widget, gpointer data);
 void on_test_note_button_press(GtkWidget *widget, gpointer data);
 void on_edit_action_button_press(GtkWidget *widget, gpointer data);
@@ -54,6 +55,8 @@ void on_edit_save_position_cancel(GtkWidget *widget, gpointer data);
 void on_tuning_change(GtkWidget *widget, gpointer data);
 void on_polyphony_change(GtkWidget *widget, gpointer data);
 void on_mono_mode_activate(GtkWidget *widget, gpointer data);
+void on_glide_mode_activate(GtkWidget *widget, gpointer data);
+void on_bendrange_change(GtkWidget *widget, gpointer data);
 void display_notice(char *message1, char *message2);
 void on_notice_dismiss(GtkWidget *widget, gpointer data);
 void update_detent_label(int index, int value);
@@ -61,8 +64,10 @@ void update_voice_widget(int port, float value);
 void update_voice_widgets_from_patch(xsynth_patch_t *patch);
 void update_from_program_select(int bank, int program);
 void update_patch_from_voice_widgets(xsynth_patch_t *patch);
-void update_monophonic(const char *value);
 void update_polyphony(const char *value);
+void update_monophonic(const char *value);
+void update_glide(const char *value);
+void update_bendrange(const char *value);
 void rebuild_patches_clist(void);
 
 #endif  /* _GUI_CALLBACKS_H */

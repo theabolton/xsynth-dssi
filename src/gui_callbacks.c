@@ -67,6 +67,10 @@ static unsigned char test_note_velocity = 96;
 static gchar *file_selection_last_filename = NULL;
 extern char  *project_directory;
 
+#if !GTK_CHECK_VERSION(2, 0, 0)
+static int vcf_mode = 0;
+#endif
+
 void
 file_selection_set_path(GtkWidget *file_selection)
 {
@@ -383,6 +387,19 @@ on_voice_onoff_toggled( GtkWidget *widget, gpointer data )
 }
 
 void
+on_vcf_mode_activate(GtkWidget *widget, gpointer data)
+{
+    unsigned char mode = (unsigned char)(int)data;
+
+    GDB_MESSAGE(GDB_GUI, " on_vcf_mode_activate: vcf mode '%d' selected\n", mode);
+
+    lo_send(osc_host_address, osc_control_path, "if", XSYNTH_PORT_VCF_MODE, (float)mode);
+#if !GTK_CHECK_VERSION(2, 0, 0)
+    vcf_mode = mode;
+#endif
+}
+
+void
 on_test_note_slider_change(GtkWidget *widget, gpointer data)
 {
     unsigned char value = lrintf(GTK_ADJUSTMENT(widget)->value);
@@ -478,7 +495,7 @@ on_tuning_change(GtkWidget *widget, gpointer data)
     float value = GTK_ADJUSTMENT(widget)->value;
 
     if (internal_gui_update_only) {
-        /* GUIDB_MESSAGE(DB_GUI, " on_tuning_change: skipping further action\n"); */
+        /* GDB_MESSAGE(GDB_GUI, " on_tuning_change: skipping further action\n"); */
         return;
     }
 
@@ -512,6 +529,33 @@ on_mono_mode_activate(GtkWidget *widget, gpointer data)
     GDB_MESSAGE(GDB_GUI, " on_mono_mode_activate: monophonic mode '%s' selected\n", mode);
 
     lo_send(osc_host_address, osc_configure_path, "ss", "monophonic", mode);
+}
+
+void
+on_glide_mode_activate(GtkWidget *widget, gpointer data)
+{
+    char *mode = data;
+
+    GDB_MESSAGE(GDB_GUI, " on_glide_mode_activate: glide mode '%s' selected\n", mode);
+
+    lo_send(osc_host_address, osc_configure_path, "ss", "glide", mode);
+}
+
+void
+on_bendrange_change(GtkWidget *widget, gpointer data)
+{
+    int bendrange = lrintf(GTK_ADJUSTMENT(widget)->value);
+    char buffer[4];
+    
+    if (internal_gui_update_only) {
+        /* GUIDB_MESSAGE(DB_GUI, " on_bendrange_change: skipping further action\n"); */
+        return;
+    }
+
+    GDB_MESSAGE(GDB_GUI, " on_bendrange_change: bendrange set to %d\n", bendrange);
+
+    snprintf(buffer, 4, "%d", bendrange);
+    lo_send(osc_host_address, osc_configure_path, "ss", "bendrange", buffer);
 }
 
 void
@@ -561,9 +605,6 @@ update_voice_widget(int port, float value)
     if (port < XSYNTH_PORT_OSC1_PITCH || port >= XSYNTH_PORTS_COUNT) {
         return;
     }
-    if (port == XSYNTH_PORT_TUNING)
-        // !FIX! handle tuning specially!
-        return;  // !FIX!
 
     xpd = &xsynth_port_description[port];
     if (value < xpd->lower_bound)
@@ -572,6 +613,14 @@ update_voice_widget(int port, float value)
         value = xpd->upper_bound;
     
     internal_gui_update_only = 1;
+
+    if (port == XSYNTH_PORT_TUNING) {  /* handle tuning specially, since it's not stored in patch */
+        (GTK_ADJUSTMENT(tuning_adj))->value = value;
+        gtk_signal_emit_by_name (tuning_adj, "value_changed");  /* causes call to on_tuning_change callback */
+
+        internal_gui_update_only = 0;
+        return;
+    }
 
     switch (xpd->type) {
 
@@ -586,9 +635,15 @@ update_voice_widget(int port, float value)
 
       case XSYNTH_PORT_TYPE_LOGARITHMIC:
         cval = log(value / xpd->a) / (xpd->c * log(xpd->b));
-        if (cval < 1.0e-6f)
-            cval = 0.0f;
-        else if (cval > 1.0f - 1.0e-6f)
+        if (port == XSYNTH_PORT_OSC1_PITCH ||
+            port == XSYNTH_PORT_OSC2_PITCH) {  /* oscillator pitch knobs go -10 to 10 */
+            if (cval < -1.0 + 1.0e-6f)
+                cval = -1.0f;
+        } else {
+            if (cval < 1.0e-6f)
+                cval = 0.0f;
+        }
+        if (cval > 1.0f - 1.0e-6f)
             cval = 1.0f;
         /* GDB_MESSAGE(GDB_GUI, " update_voice_widget: change of %s to %f => %f\n", xpd->name, value, cval); */
         adj = (GtkAdjustment *)voice_widget[port];
@@ -609,6 +664,16 @@ update_voice_widget(int port, float value)
         /* GDB_MESSAGE(GDB_GUI, " update_voice_widget: change of %s to %f => %d\n", xpd->name, value, dval); */
         button = (GtkWidget *)voice_widget[port];
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), dval); /* causes call to on_voice_onoff_toggled callback */
+        break;
+
+      case XSYNTH_PORT_TYPE_VCF_MODE:
+        dval = lrintf(value);
+        gtk_option_menu_set_history(GTK_OPTION_MENU (voice_widget[port]),
+                                    dval);  /* updates optionmenu current selection,
+                                             * without needing to send it a signal */
+#if !GTK_CHECK_VERSION(2, 0, 0)
+        vcf_mode = dval;
+#endif
         break;
 
       default:
@@ -649,7 +714,7 @@ update_voice_widgets_from_patch(xsynth_patch_t *patch)
     update_voice_widget(XSYNTH_PORT_EG2_AMOUNT_F,      patch->eg2_amount_f);
     update_voice_widget(XSYNTH_PORT_VCF_CUTOFF,        patch->vcf_cutoff);
     update_voice_widget(XSYNTH_PORT_VCF_QRES,          patch->vcf_qres);
-    update_voice_widget(XSYNTH_PORT_VCF_4POLE,         (float)patch->vcf_4pole);
+    update_voice_widget(XSYNTH_PORT_VCF_MODE,          (float)patch->vcf_mode);
     update_voice_widget(XSYNTH_PORT_GLIDE_TIME,        patch->glide_time);
     update_voice_widget(XSYNTH_PORT_VOLUME,            patch->volume);
     gtk_entry_set_text(GTK_ENTRY(name_entry), patch->name);
@@ -694,6 +759,16 @@ get_value_from_onoff(int index)
     return (GTK_TOGGLE_BUTTON (voice_widget[index])->active ? 1 : 0);
 }
 
+static unsigned char
+get_value_from_opmenu(int index)
+{
+#if GTK_CHECK_VERSION(2, 0, 0)
+    return gtk_option_menu_get_history(GTK_OPTION_MENU (voice_widget[index]));
+#else
+    return vcf_mode;
+#endif
+}
+
 void
 update_patch_from_voice_widgets(xsynth_patch_t *patch)
 {
@@ -727,7 +802,7 @@ update_patch_from_voice_widgets(xsynth_patch_t *patch)
     patch->eg2_amount_f         = get_value_from_slider(XSYNTH_PORT_EG2_AMOUNT_F);      
     patch->vcf_cutoff           = get_value_from_slider(XSYNTH_PORT_VCF_CUTOFF);        
     patch->vcf_qres             = get_value_from_slider(XSYNTH_PORT_VCF_QRES);          
-    patch->vcf_4pole            = get_value_from_onoff(XSYNTH_PORT_VCF_4POLE);         
+    patch->vcf_mode             = get_value_from_opmenu(XSYNTH_PORT_VCF_MODE);
     patch->glide_time           = get_value_from_slider(XSYNTH_PORT_GLIDE_TIME);        
     patch->volume               = get_value_from_slider(XSYNTH_PORT_VOLUME);
 
@@ -737,6 +812,24 @@ update_patch_from_voice_widgets(xsynth_patch_t *patch)
     i = strlen(patch->name);
     while(i && patch->name[i - 1] == ' ') i--;
     patch->name[i] = 0;
+}
+
+void
+update_polyphony(const char *value)
+{
+    int poly = atoi(value);
+
+    GDB_MESSAGE(GDB_OSC, ": update_polyphony called with '%s'\n", value);
+
+    if (poly > 0 && poly < XSYNTH_MAX_POLYPHONY) {
+
+        internal_gui_update_only = 1;
+
+        GTK_ADJUSTMENT(polyphony_adj)->value = (float)poly;
+        gtk_signal_emit_by_name (GTK_OBJECT (polyphony_adj), "value_changed");  /* causes call to on_polyphony_change callback */
+
+        internal_gui_update_only = 0;
+    }
 }
 
 void
@@ -764,18 +857,36 @@ update_monophonic(const char *value)
 }
 
 void
-update_polyphony(const char *value)
+update_glide(const char *value)
 {
-    int poly = atoi(value);
+    int index;
 
-    GDB_MESSAGE(GDB_OSC, ": update_polyphony called with '%s'\n", value);
+    GDB_MESSAGE(GDB_OSC, ": update_glide called with '%s'\n", value);
 
-    if (poly > 0 && poly < XSYNTH_MAX_POLYPHONY) {
+    if (!strcmp(value, "legato")) {
+        index = 0;
+    } else {
+        return;
+    }
+
+    gtk_option_menu_set_history(GTK_OPTION_MENU (glide_option_menu),
+                                index);  /* updates optionmenu current selection,
+                                          * without needing to send it a signal */
+}
+
+void
+update_bendrange(const char *value)
+{
+    int range = atoi(value);
+
+    GDB_MESSAGE(GDB_OSC, ": update_bendrange called with '%s'\n", value);
+
+    if (range >= 0 && range <= 12) {
 
         internal_gui_update_only = 1;
 
-        GTK_ADJUSTMENT(polyphony_adj)->value = (float)poly;
-        gtk_signal_emit_by_name (GTK_OBJECT (polyphony_adj), "value_changed");  /* causes call to on_voice_slider_change callback */
+        GTK_ADJUSTMENT(bendrange_adj)->value = (float)range;
+        gtk_signal_emit_by_name (GTK_OBJECT (bendrange_adj), "value_changed");  /* causes call to on_bendrange_change callback */
 
         internal_gui_update_only = 0;
     }
@@ -803,6 +914,10 @@ rebuild_patches_clist(void)
             gtk_clist_append(GTK_CLIST(patches_clist), data);
         }
     }
+#if GTK_CHECK_VERSION(2, 0, 0)
+    /* kick GTK+ 2.4.x in the pants.... */
+    gtk_signal_emit_by_name (GTK_OBJECT (patches_clist), "check-resize");
+#endif    
     gtk_clist_thaw(GTK_CLIST(patches_clist));
 }
 

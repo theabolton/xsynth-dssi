@@ -29,6 +29,7 @@
 #include <gtk/gtk.h>
 #include "gtkknob.h"
 
+#include "xsynth.h"
 #include "xsynth_ports.h"
 #include "xsynth_synth.h"
 #include "gui_callbacks.h"
@@ -62,8 +63,11 @@ GtkWidget *lfo_waveform_pixmap;
 
 GtkWidget *name_entry;
 
-GtkWidget *monophonic_option_menu;
+GtkObject *tuning_adj;
 GtkObject *polyphony_adj;
+GtkWidget *monophonic_option_menu;
+GtkWidget *glide_option_menu;
+GtkObject *bendrange_adj;
 
 GtkObject *voice_widget[XSYNTH_PORTS_COUNT];
 
@@ -191,7 +195,11 @@ create_main_window (const char *tag)
   GtkWidget *frame9;
   GtkWidget *vcf_table;
   GtkWidget *label40;
-  GtkWidget *vcf_4pole;
+  GtkWidget *vcf_mode_option_menu;
+  GtkWidget *vcf_mode_2pole;
+  GtkWidget *vcf_mode_4pole;
+  GtkWidget *vcf_mode_mvclpf;
+  GtkWidget *vcf_mode_menu;
   GtkWidget *frame10;
   GtkWidget *volume_table;
   GtkWidget *frame11;
@@ -209,15 +217,19 @@ create_main_window (const char *tag)
   GtkWidget *label54;
   GtkWidget *patch_edit_tab_label;
   GtkWidget *frame14;
-  GtkWidget *table16;
-  GtkObject *tuning_spin_adj;
+  GtkWidget *configuration_table;
   GtkWidget *tuning_spin;
+  GtkWidget *polyphony;
   GtkWidget *mono_mode_off;
   GtkWidget *mono_mode_on;
   GtkWidget *mono_mode_once;
   GtkWidget *mono_mode_both;
   GtkWidget *optionmenu5_menu;
-  GtkWidget *polyphony;
+  GtkWidget *glide_mode_label;
+  GtkWidget *glide_mode_legato;
+  GtkWidget *glide_menu;
+  GtkWidget *bendrange_label;
+  GtkWidget *bendrange;
   GtkWidget *label43;
   GtkWidget *label44;
   GtkWidget *frame15;
@@ -452,6 +464,8 @@ create_main_window (const char *tag)
   gtk_spin_button_set_wrap (GTK_SPIN_BUTTON (osc1_waveform_spin), TRUE);
     
     create_voice_slider(main_window, XSYNTH_PORT_OSC1_PITCH, osc1_table, 0, 0, "pitch", col1_sizegroup);
+    GTK_ADJUSTMENT(voice_widget[XSYNTH_PORT_OSC1_PITCH])->lower = -10.0f;
+    gtk_adjustment_changed (GTK_ADJUSTMENT(voice_widget[XSYNTH_PORT_OSC1_PITCH]));
 
     create_voice_slider(main_window, XSYNTH_PORT_OSC1_PULSEWIDTH, osc1_table, 0, 2, "pw/slope", col1_sizegroup);
 
@@ -534,6 +548,8 @@ create_main_window (const char *tag)
   gtk_spin_button_set_wrap (GTK_SPIN_BUTTON (osc2_waveform_spin), TRUE);
     
     create_voice_slider(main_window, XSYNTH_PORT_OSC2_PITCH, osc2_table, 0, 0, "pitch", col2_sizegroup);
+    GTK_ADJUSTMENT(voice_widget[XSYNTH_PORT_OSC2_PITCH])->lower = -10.0f;
+    gtk_adjustment_changed (GTK_ADJUSTMENT(voice_widget[XSYNTH_PORT_OSC2_PITCH]));
 
     create_voice_slider(main_window, XSYNTH_PORT_OSC2_PULSEWIDTH, osc2_table, 0, 2, "pw/slope", col2_sizegroup);
 
@@ -728,7 +744,7 @@ create_main_window (const char *tag)
   gtk_table_set_row_spacings (GTK_TABLE (vcf_table), 1);
   gtk_table_set_col_spacings (GTK_TABLE (vcf_table), 5);
 
-  label40 = gtk_label_new ("12-24\ndb/oct");
+  label40 = gtk_label_new ("mode");
   gtk_widget_ref (label40);
   gtk_object_set_data_full (GTK_OBJECT (main_window), "label40", label40,
                             (GtkDestroyNotify) gtk_widget_unref);
@@ -738,15 +754,26 @@ create_main_window (const char *tag)
                     (GtkAttachOptions) (0), 0, 0);
   gtk_misc_set_alignment (GTK_MISC (label40), 0, 0.5);
 
-    vcf_4pole = gtk_check_button_new ();
-    voice_widget[XSYNTH_PORT_VCF_4POLE] = (GtkObject *)vcf_4pole;
-  gtk_widget_ref (vcf_4pole);
-  gtk_object_set_data_full (GTK_OBJECT (main_window), "vcf_4pole", vcf_4pole,
-                            (GtkDestroyNotify) gtk_widget_unref);
-  gtk_widget_show (vcf_4pole);
-  gtk_table_attach (GTK_TABLE (vcf_table), vcf_4pole, 1, 3, 2, 3,
-                    (GtkAttachOptions) (GTK_FILL),
-                    (GtkAttachOptions) (0), 0, 0);
+    vcf_mode_option_menu = gtk_option_menu_new ();
+    voice_widget[XSYNTH_PORT_VCF_MODE] = (GtkObject *)vcf_mode_option_menu;
+    gtk_widget_ref (vcf_mode_option_menu);
+    gtk_object_set_data_full (GTK_OBJECT (main_window), "vcf_mode_option_menu", vcf_mode_option_menu,
+                              (GtkDestroyNotify) gtk_widget_unref);
+    gtk_widget_show (vcf_mode_option_menu);
+    gtk_table_attach (GTK_TABLE (vcf_table), vcf_mode_option_menu, 1, 3, 2, 3,
+                      (GtkAttachOptions) (GTK_FILL),
+                      (GtkAttachOptions) (0), 0, 0);
+    vcf_mode_menu = gtk_menu_new ();
+    vcf_mode_2pole = gtk_menu_item_new_with_label ("12 db/oct");
+    gtk_widget_show (vcf_mode_2pole);
+    gtk_menu_append (GTK_MENU (vcf_mode_menu), vcf_mode_2pole);
+    vcf_mode_4pole = gtk_menu_item_new_with_label ("24 db/oct");
+    gtk_widget_show (vcf_mode_4pole);
+    gtk_menu_append (GTK_MENU (vcf_mode_menu), vcf_mode_4pole);
+    vcf_mode_mvclpf = gtk_menu_item_new_with_label ("MCVLPF-3");
+    gtk_widget_show (vcf_mode_mvclpf);
+    gtk_menu_append (GTK_MENU (vcf_mode_menu), vcf_mode_mvclpf);
+    gtk_option_menu_set_menu (GTK_OPTION_MENU (vcf_mode_option_menu), vcf_mode_menu);
 
     create_voice_slider(main_window, XSYNTH_PORT_VCF_CUTOFF, vcf_table, 0, 0, "cutoff", col3_sizegroup);
 
@@ -844,44 +871,74 @@ create_main_window (const char *tag)
   gtk_widget_show (frame14);
   gtk_container_add (GTK_CONTAINER (notebook1), frame14);
 
-  table16 = gtk_table_new (4, 3, FALSE);
-  gtk_widget_ref (table16);
-  gtk_object_set_data_full (GTK_OBJECT (main_window), "table16", table16,
+  configuration_table = gtk_table_new (6, 3, FALSE);
+  gtk_widget_ref (configuration_table);
+  gtk_object_set_data_full (GTK_OBJECT (main_window), "configuration_table", configuration_table,
                             (GtkDestroyNotify) gtk_widget_unref);
-  gtk_widget_show (table16);
-  gtk_container_add (GTK_CONTAINER (frame14), table16);
-  gtk_container_set_border_width (GTK_CONTAINER (table16), 2);
-  gtk_table_set_row_spacings (GTK_TABLE (table16), 5);
-  gtk_table_set_col_spacings (GTK_TABLE (table16), 5);
+  gtk_widget_show (configuration_table);
+  gtk_container_add (GTK_CONTAINER (frame14), configuration_table);
+  gtk_container_set_border_width (GTK_CONTAINER (configuration_table), 2);
+  gtk_table_set_row_spacings (GTK_TABLE (configuration_table), 5);
+  gtk_table_set_col_spacings (GTK_TABLE (configuration_table), 5);
 
   label54 = gtk_label_new ("Tuning");
   gtk_widget_ref (label54);
   gtk_object_set_data_full (GTK_OBJECT (main_window), "label54", label54,
                             (GtkDestroyNotify) gtk_widget_unref);
   gtk_widget_show (label54);
-  gtk_table_attach (GTK_TABLE (table16), label54, 0, 1, 0, 1,
+  gtk_table_attach (GTK_TABLE (configuration_table), label54, 0, 1, 0, 1,
                     (GtkAttachOptions) (GTK_FILL),
                     (GtkAttachOptions) (0), 0, 0);
   gtk_misc_set_alignment (GTK_MISC (label54), 0, 0.5);
 
-  tuning_spin_adj = gtk_adjustment_new (440, 415.3, 467.2, 0.1, 1, 1);
-  tuning_spin = gtk_spin_button_new (GTK_ADJUSTMENT (tuning_spin_adj), 1, 1);
+  tuning_adj = gtk_adjustment_new (440, 415.3, 467.2, 0.1, 1, 1);
+  tuning_spin = gtk_spin_button_new (GTK_ADJUSTMENT (tuning_adj), 1, 1);
   gtk_widget_ref (tuning_spin);
   gtk_object_set_data_full (GTK_OBJECT (main_window), "tuning_spin", tuning_spin,
                             (GtkDestroyNotify) gtk_widget_unref);
   gtk_widget_show (tuning_spin);
-  gtk_table_attach (GTK_TABLE (table16), tuning_spin, 1, 2, 0, 1,
+  gtk_table_attach (GTK_TABLE (configuration_table), tuning_spin, 1, 2, 0, 1,
                     (GtkAttachOptions) (GTK_FILL),
                     (GtkAttachOptions) (0), 0, 0);
   gtk_spin_button_set_numeric (GTK_SPIN_BUTTON (tuning_spin), TRUE);
   gtk_spin_button_set_update_policy (GTK_SPIN_BUTTON (tuning_spin), GTK_UPDATE_IF_VALID);
+
+  label43 = gtk_label_new ("Polyphony");
+  gtk_widget_ref (label43);
+  gtk_object_set_data_full (GTK_OBJECT (main_window), "label43", label43,
+                            (GtkDestroyNotify) gtk_widget_unref);
+  gtk_widget_show (label43);
+  gtk_table_attach (GTK_TABLE (configuration_table), label43, 0, 1, 1, 2,
+                    (GtkAttachOptions) (GTK_FILL),
+                    (GtkAttachOptions) (0), 0, 0);
+  gtk_misc_set_alignment (GTK_MISC (label43), 0, 0.5);
+
+  polyphony_adj = gtk_adjustment_new (XSYNTH_DEFAULT_POLYPHONY, 1, 128, 1, 10, 10);
+  polyphony = gtk_spin_button_new (GTK_ADJUSTMENT (polyphony_adj), 1, 0);
+  gtk_widget_ref (polyphony);
+  gtk_object_set_data_full (GTK_OBJECT (main_window), "polyphony", polyphony,
+                            (GtkDestroyNotify) gtk_widget_unref);
+  gtk_widget_show (polyphony);
+  gtk_table_attach (GTK_TABLE (configuration_table), polyphony, 1, 2, 1, 2,
+                    (GtkAttachOptions) (GTK_FILL),
+                    (GtkAttachOptions) (0), 0, 0);
+
+  label44 = gtk_label_new ("Monophonic Mode");
+  gtk_widget_ref (label44);
+  gtk_object_set_data_full (GTK_OBJECT (main_window), "label44", label44,
+                            (GtkDestroyNotify) gtk_widget_unref);
+  gtk_widget_show (label44);
+  gtk_table_attach (GTK_TABLE (configuration_table), label44, 0, 1, 2, 3,
+                    (GtkAttachOptions) (GTK_FILL),
+                    (GtkAttachOptions) (0), 0, 0);
+  gtk_misc_set_alignment (GTK_MISC (label44), 0, 0.5);
 
     monophonic_option_menu = gtk_option_menu_new ();
     gtk_widget_ref (monophonic_option_menu);
     gtk_object_set_data_full (GTK_OBJECT (main_window), "monophonic_option_menu", monophonic_option_menu,
                               (GtkDestroyNotify) gtk_widget_unref);
     gtk_widget_show (monophonic_option_menu);
-    gtk_table_attach (GTK_TABLE (table16), monophonic_option_menu, 1, 2, 2, 3,
+    gtk_table_attach (GTK_TABLE (configuration_table), monophonic_option_menu, 1, 2, 2, 3,
                       (GtkAttachOptions) (GTK_FILL),
                       (GtkAttachOptions) (0), 0, 0);
     optionmenu5_menu = gtk_menu_new ();
@@ -899,42 +956,56 @@ create_main_window (const char *tag)
     gtk_menu_append (GTK_MENU (optionmenu5_menu), mono_mode_both);
     gtk_option_menu_set_menu (GTK_OPTION_MENU (monophonic_option_menu), optionmenu5_menu);
 
-  polyphony_adj = gtk_adjustment_new (XSYNTH_DEFAULT_POLYPHONY, 1, 128, 1, 10, 10);
-  polyphony = gtk_spin_button_new (GTK_ADJUSTMENT (polyphony_adj), 1, 0);
-  gtk_widget_ref (polyphony);
-  gtk_object_set_data_full (GTK_OBJECT (main_window), "polyphony", polyphony,
-                            (GtkDestroyNotify) gtk_widget_unref);
-  gtk_widget_show (polyphony);
-  gtk_table_attach (GTK_TABLE (table16), polyphony, 1, 2, 1, 2,
-                    (GtkAttachOptions) (GTK_FILL),
-                    (GtkAttachOptions) (0), 0, 0);
+    glide_mode_label = gtk_label_new ("Glide Mode");
+    gtk_widget_ref (glide_mode_label);
+    gtk_object_set_data_full (GTK_OBJECT (main_window), "glide_mode_label", glide_mode_label,
+                              (GtkDestroyNotify) gtk_widget_unref);
+    gtk_widget_show (glide_mode_label);
+    gtk_table_attach (GTK_TABLE (configuration_table), glide_mode_label, 0, 1, 3, 4,
+                      (GtkAttachOptions) (GTK_FILL),
+                      (GtkAttachOptions) (0), 0, 0);
+    gtk_misc_set_alignment (GTK_MISC (glide_mode_label), 0, 0.5);
 
-  label43 = gtk_label_new ("Polyphony");
-  gtk_widget_ref (label43);
-  gtk_object_set_data_full (GTK_OBJECT (main_window), "label43", label43,
-                            (GtkDestroyNotify) gtk_widget_unref);
-  gtk_widget_show (label43);
-  gtk_table_attach (GTK_TABLE (table16), label43, 0, 1, 1, 2,
-                    (GtkAttachOptions) (GTK_FILL),
-                    (GtkAttachOptions) (0), 0, 0);
-  gtk_misc_set_alignment (GTK_MISC (label43), 0, 0.5);
+    glide_option_menu = gtk_option_menu_new ();
+    gtk_widget_ref (glide_option_menu);
+    gtk_object_set_data_full (GTK_OBJECT (main_window), "glide_option_menu", glide_option_menu,
+                              (GtkDestroyNotify) gtk_widget_unref);
+    gtk_widget_show (glide_option_menu);
+    gtk_table_attach (GTK_TABLE (configuration_table), glide_option_menu, 1, 2, 3, 4,
+                      (GtkAttachOptions) (GTK_FILL),
+                      (GtkAttachOptions) (0), 0, 0);
+    glide_menu = gtk_menu_new ();
+    glide_mode_legato = gtk_menu_item_new_with_label ("Legato Only");
+    gtk_widget_show (glide_mode_legato);
+    gtk_menu_append (GTK_MENU (glide_menu), glide_mode_legato);
+    gtk_option_menu_set_menu (GTK_OPTION_MENU (glide_option_menu), glide_menu);
 
-  label44 = gtk_label_new ("Monophonic Mode");
-  gtk_widget_ref (label44);
-  gtk_object_set_data_full (GTK_OBJECT (main_window), "label44", label44,
+  bendrange_label = gtk_label_new ("Pitch Bend Range");
+  gtk_widget_ref (bendrange_label);
+  gtk_object_set_data_full (GTK_OBJECT (main_window), "bendrange_label", bendrange_label,
                             (GtkDestroyNotify) gtk_widget_unref);
-  gtk_widget_show (label44);
-  gtk_table_attach (GTK_TABLE (table16), label44, 0, 1, 2, 3,
+  gtk_widget_show (bendrange_label);
+  gtk_table_attach (GTK_TABLE (configuration_table), bendrange_label, 0, 1, 4, 5,
                     (GtkAttachOptions) (GTK_FILL),
                     (GtkAttachOptions) (0), 0, 0);
-  gtk_misc_set_alignment (GTK_MISC (label44), 0, 0.5);
+  gtk_misc_set_alignment (GTK_MISC (bendrange_label), 0, 0.5);
+
+  bendrange_adj = gtk_adjustment_new (2, 0, 12, 1, 1, 1);
+  bendrange = gtk_spin_button_new (GTK_ADJUSTMENT (bendrange_adj), 1, 0);
+  gtk_widget_ref (bendrange);
+  gtk_object_set_data_full (GTK_OBJECT (main_window), "bendrange", bendrange,
+                            (GtkDestroyNotify) gtk_widget_unref);
+  gtk_widget_show (bendrange);
+  gtk_table_attach (GTK_TABLE (configuration_table), bendrange, 1, 2, 4, 5,
+                    (GtkAttachOptions) (GTK_FILL),
+                    (GtkAttachOptions) (0), 0, 0);
 
   frame15 = gtk_frame_new (NULL);
   gtk_widget_ref (frame15);
   gtk_object_set_data_full (GTK_OBJECT (main_window), "frame15", frame15,
                             (GtkDestroyNotify) gtk_widget_unref);
   gtk_widget_show (frame15);
-  gtk_table_attach (GTK_TABLE (table16), frame15, 0, 3, 3, 4,
+  gtk_table_attach (GTK_TABLE (configuration_table), frame15, 0, 3, 5, 6,
                     (GtkAttachOptions) (GTK_EXPAND),
                     (GtkAttachOptions) (GTK_EXPAND), 0, 0);
 
@@ -951,7 +1022,7 @@ create_main_window (const char *tag)
   gtk_object_set_data_full (GTK_OBJECT (main_window), "label47", label47,
                             (GtkDestroyNotify) gtk_widget_unref);
   gtk_widget_show (label47);
-  gtk_table_attach (GTK_TABLE (table16), label47, 2, 3, 0, 3,
+  gtk_table_attach (GTK_TABLE (configuration_table), label47, 2, 3, 0, 5,
                     (GtkAttachOptions) (GTK_EXPAND),
                     (GtkAttachOptions) (0), 0, 0);
   gtk_misc_set_alignment (GTK_MISC (label47), 0, 0.5);
@@ -1145,9 +1216,15 @@ create_main_window (const char *tag)
     gtk_signal_connect (GTK_OBJECT (voice_widget[XSYNTH_PORT_VCF_QRES]),
                         "value_changed", GTK_SIGNAL_FUNC(on_voice_slider_change),
                         (gpointer)XSYNTH_PORT_VCF_QRES);
-    gtk_signal_connect (GTK_OBJECT (vcf_4pole), "toggled",
-                        GTK_SIGNAL_FUNC (on_voice_onoff_toggled),
-                        (gpointer)XSYNTH_PORT_VCF_4POLE);
+    gtk_signal_connect (GTK_OBJECT (vcf_mode_2pole), "activate",
+                        GTK_SIGNAL_FUNC (on_vcf_mode_activate),
+                        (gpointer)0);
+    gtk_signal_connect (GTK_OBJECT (vcf_mode_4pole), "activate",
+                        GTK_SIGNAL_FUNC (on_vcf_mode_activate),
+                        (gpointer)1);
+    gtk_signal_connect (GTK_OBJECT (vcf_mode_mvclpf), "activate",
+                        GTK_SIGNAL_FUNC (on_vcf_mode_activate),
+                        (gpointer)2);
     gtk_signal_connect (GTK_OBJECT (voice_widget[XSYNTH_PORT_GLIDE_TIME]),
                         "value_changed", GTK_SIGNAL_FUNC(on_voice_slider_change),
                         (gpointer)XSYNTH_PORT_GLIDE_TIME);
@@ -1175,7 +1252,7 @@ create_main_window (const char *tag)
                         NULL);
 
     /* connect synth configuration widgets */
-    gtk_signal_connect (GTK_OBJECT (tuning_spin_adj), "value_changed",
+    gtk_signal_connect (GTK_OBJECT (tuning_adj), "value_changed",
                         GTK_SIGNAL_FUNC(on_tuning_change),
                         NULL);
     gtk_signal_connect (GTK_OBJECT (gtk_spin_button_get_adjustment (GTK_SPIN_BUTTON (polyphony))),
@@ -1193,6 +1270,12 @@ create_main_window (const char *tag)
     gtk_signal_connect (GTK_OBJECT (mono_mode_both), "activate",
                         GTK_SIGNAL_FUNC (on_mono_mode_activate),
                         (gpointer)"both");
+    gtk_signal_connect (GTK_OBJECT (glide_mode_legato), "activate",
+                        GTK_SIGNAL_FUNC (on_glide_mode_activate),
+                        (gpointer)"legato");
+    gtk_signal_connect (GTK_OBJECT (bendrange_adj), "value_changed",
+                        GTK_SIGNAL_FUNC(on_bendrange_change),
+                        NULL);
 
     gtk_window_add_accel_group (GTK_WINDOW (main_window), accel_group);
 }

@@ -122,6 +122,7 @@ xsynth_voice_import_patch(xsynth_patch_t *xsynth_patch,
     xsynth_patch->eg1_decay_time    = le_float(old_patch + 84);
     xsynth_patch->eg1_sustain_level = le_float(old_patch + 92);
     xsynth_patch->eg1_release_time  = le_float(old_patch + 100);
+    xsynth_patch->eg1_vel_sens      = 0.0f;
     xsynth_patch->eg1_amount_o      = le_float(old_patch + 108);
     xsynth_patch->eg1_amount_f      = le_float(old_patch + 116);
 
@@ -130,6 +131,7 @@ xsynth_voice_import_patch(xsynth_patch_t *xsynth_patch,
     xsynth_patch->eg2_decay_time    = le_float(old_patch + 132);
     xsynth_patch->eg2_sustain_level = le_float(old_patch + 140);
     xsynth_patch->eg2_release_time  = le_float(old_patch + 148);
+    xsynth_patch->eg2_vel_sens      = 0.0f;
     xsynth_patch->eg2_amount_o      = le_float(old_patch + 156);
     xsynth_patch->eg2_amount_f      = le_float(old_patch + 164);
 
@@ -147,7 +149,7 @@ xsynth_voice_import_patch(xsynth_patch_t *xsynth_patch,
 
     /* Buttons */
     xsynth_patch->osc_sync          = old_patch[207];
-    xsynth_patch->vcf_4pole         = old_patch[208];
+    xsynth_patch->vcf_mode          = old_patch[208];
 
     /* Name */
     if (unpack_name) {
@@ -163,10 +165,16 @@ xsynth_voice_import_patch(xsynth_patch_t *xsynth_patch,
 int
 xsynth_voice_write_patch(FILE *file, xsynth_patch_t *patch)
 {
-    int i;
+    int format, i;
+
+    if (patch->eg1_vel_sens < 1e-6f &&
+        patch->eg2_vel_sens < 1e-6f)
+        format = 0;
+    else
+        format = 1;
 
     fprintf(file, "# Xsynth-dssi patch\n");
-    fprintf(file, "xsynth-dssi patch format 0 begin\n");
+    fprintf(file, "xsynth-dssi patch format %d begin\n", format);
 
     fprintf(file, "name ");
     for (i = 0; i < 30; i++) {
@@ -181,30 +189,44 @@ xsynth_voice_write_patch(FILE *file, xsynth_patch_t *patch)
     }
     fprintf(file, "\n");
 
-    fprintf(file, "osc1 %.6f %d %.6f\n", patch->osc1_pitch,
+    fprintf(file, "osc1 %.6g %d %.6g\n", patch->osc1_pitch,
             patch->osc1_waveform, patch->osc1_pulsewidth);
-    fprintf(file, "osc2 %.6f %d %.6f\n", patch->osc2_pitch,
+    fprintf(file, "osc2 %.6g %d %.6g\n", patch->osc2_pitch,
             patch->osc2_waveform, patch->osc2_pulsewidth);
     fprintf(file, "sync %d\n", patch->osc_sync);
-    fprintf(file, "balance %.6f\n", patch->osc_balance);
+    fprintf(file, "balance %.6g\n", patch->osc_balance);
 
-    fprintf(file, "lfo %.6f %d %.6f %.6f\n", patch->lfo_frequency,
+    fprintf(file, "lfo %.6g %d %.6g %.6g\n", patch->lfo_frequency,
             patch->lfo_waveform, patch->lfo_amount_o, patch->lfo_amount_f);
 
-    fprintf(file, "eg1 %.6f %.6f %.6f %.6f %.6f %.6f\n",
-            patch->eg1_attack_time, patch->eg1_decay_time,
-            patch->eg1_sustain_level, patch->eg1_release_time,
-            patch->eg1_amount_o, patch->eg1_amount_f);
-    fprintf(file, "eg2 %.6f %.6f %.6f %.6f %.6f %.6f\n",
-            patch->eg2_attack_time, patch->eg2_decay_time,
-            patch->eg2_sustain_level, patch->eg2_release_time,
-            patch->eg2_amount_o, patch->eg2_amount_f);
+    if (format == 0) {  /* backward compatible */
 
-    fprintf(file, "vcf %.6f %.6f %d\n", patch->vcf_cutoff, patch->vcf_qres,
-            patch->vcf_4pole);
+        fprintf(file, "eg1 %.6g %.6g %.6g %.6g %.6g %.6g\n",
+                patch->eg1_attack_time, patch->eg1_decay_time,
+                patch->eg1_sustain_level, patch->eg1_release_time,
+                patch->eg1_amount_o, patch->eg1_amount_f);
+        fprintf(file, "eg2 %.6g %.6g %.6g %.6g %.6g %.6g\n",
+                patch->eg2_attack_time, patch->eg2_decay_time,
+                patch->eg2_sustain_level, patch->eg2_release_time,
+                patch->eg2_amount_o, patch->eg2_amount_f);
 
-    fprintf(file, "glide %.6f\n", patch->glide_time);
-    fprintf(file, "volume %.6f\n", patch->volume);
+    } else {
+
+        fprintf(file, "eg1 %.6g %.6g %.6g %.6g %.6g %.6g %.6g\n",
+                patch->eg1_attack_time, patch->eg1_decay_time,
+                patch->eg1_sustain_level, patch->eg1_release_time,
+                patch->eg1_vel_sens, patch->eg1_amount_o, patch->eg1_amount_f);
+        fprintf(file, "eg2 %.6g %.6g %.6g %.6g %.6g %.6g %.6g\n",
+                patch->eg2_attack_time, patch->eg2_decay_time,
+                patch->eg2_sustain_level, patch->eg2_release_time,
+                patch->eg2_vel_sens, patch->eg2_amount_o, patch->eg2_amount_f);
+    }
+
+    fprintf(file, "vcf %.6g %.6g %d\n", patch->vcf_cutoff, patch->vcf_qres,
+            patch->vcf_mode);
+
+    fprintf(file, "glide %.6g\n", patch->glide_time);
+    fprintf(file, "volume %.6g\n", patch->volume);
 
     fprintf(file, "xsynth-dssi patch end\n");
 

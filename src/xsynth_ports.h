@@ -53,10 +53,10 @@
 #define XSYNTH_PORT_EG2_AMOUNT_F       24
 #define XSYNTH_PORT_VCF_CUTOFF         25
 #define XSYNTH_PORT_VCF_QRES           26
-#define XSYNTH_PORT_VCF_4POLE          27
+#define XSYNTH_PORT_VCF_MODE           27
 #define XSYNTH_PORT_GLIDE_TIME         28
 #define XSYNTH_PORT_VOLUME             29
-/* added in v0.2: */
+/* added in v0.1.1: */
 #define XSYNTH_PORT_TUNING             30
 #define XSYNTH_PORT_EG1_VEL_SENS       31
 #define XSYNTH_PORT_EG2_VEL_SENS       32
@@ -67,6 +67,7 @@
 #define XSYNTH_PORT_TYPE_LOGARITHMIC  1
 #define XSYNTH_PORT_TYPE_DETENT       2
 #define XSYNTH_PORT_TYPE_ONOFF        3
+#define XSYNTH_PORT_TYPE_VCF_MODE     4
 
 struct xsynth_port_descriptor {
 

@@ -1,3 +1,27 @@
+2004-12-25 version 0.1.3
+
+* added anti-aliased, minBLEP-based oscillators.
+* added Fons Adriaensen's MVCLPF-3 filter.
+* added velocity sensitive envelopes.
+* oscillators can now be pitched downward up to 2 octaves.
+* tuning and pitch bend range controls added.
+* extensive GUI reorganization, replaced sliders with linked knob
+    and spin button, replaced waveform labels with pixmaps,
+    defaults to use of GTK+ 2.x, but can still use GTK+ 1.2.
+* documented voice architecture in README.
+* implemented GUI OSC configure handling of 'monophonic',
+    'polyphony', and project directory key.  'load' is still
+    unimplemented.
+* implemented plugin project directory support.
+* build system now uses pkgconfig to locate dssi and liblo, plugin
+    will be built without GUI if GTK+ is not found.
+* 'About' dialog shows GUI and host OSC URLs.
+* changed activate() to new behavior.
+* plugin is now fully multi-thread safe.
+* plugin includes patch bank name in load failure messages.
+* liblo 0.12 or better now required (lo_server_set_nonblocking()
+    hack removed.)
+
 2004-07-16 version 0.1.0
 
 * extended documentation.

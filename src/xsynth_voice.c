@@ -42,7 +42,7 @@ xsynth_voice_new(xsynth_synth_t *synth)
 {
     xsynth_voice_t *voice;
 
-    voice = (xsynth_voice_t *)malloc(sizeof(xsynth_voice_t));
+    voice = (xsynth_voice_t *)calloc(sizeof(xsynth_voice_t), 1);
     if (voice) {
         voice->status = XSYNTH_VOICE_OFF;
     }
@@ -67,18 +67,22 @@ xsynth_voice_note_on(xsynth_synth_t *synth, xsynth_voice_t *voice,
          * everything up */
         XDB_MESSAGE(XDB_NOTE, " xsynth_voice_note_on in polyphonic/new section: key %d, mono %d, old status %d\n", key, synth->monophonic, voice->status);
 
-        voice->prev_pitch = xsynth_pitch[key];
-        voice->target_pitch = voice->prev_pitch;
+        voice->target_pitch = xsynth_pitch[key];
+        voice->prev_pitch = voice->target_pitch;
         if (!_PLAYING(voice)) {
             voice->lfo_pos = 0.0f;
             voice->eg1 = 0.0f;
             voice->eg2 = 0.0f;
-            voice->osc1_pos = 0.0f;
-            voice->osc2_pos = 0.0f;
             voice->delay1 = 0.0f;
             voice->delay2 = 0.0f;
             voice->delay3 = 0.0f;
             voice->delay4 = 0.0f;
+            voice->c5     = 0.0f;
+            voice->osc_index = 0;
+            voice->osc1.last_waveform = -1;
+            voice->osc1.pos = 0.0f;
+            voice->osc2.last_waveform = -1;
+            voice->osc2.pos = 0.0f;
         }
         voice->eg1_phase = 0;
         voice->eg2_phase = 0;
@@ -103,26 +107,21 @@ xsynth_voice_note_on(xsynth_synth_t *synth, xsynth_voice_t *voice,
         /* all other variables stay what they are */
 
     }
+    synth->last_noteon_pitch = voice->target_pitch;
 
-    if (synth->monophonic) {
+    /* add new key to the list of held keys */
 
-        /* add new key to the list of held keys */
-
-        /* check if new key is already in the list; if so, move it to the
-         * top of the list, otherwise shift the other keys down and add it
-         * to the top of the list. */
-        // XDB_MESSAGE(XDB_NOTE, " note-on key list before: %d %d %d %d %d %d %d %d\n", synth->held_keys[0], synth->held_keys[1], synth->held_keys[2], synth->held_keys[3], synth->held_keys[4], synth->held_keys[5], synth->held_keys[6], synth->held_keys[7]);
-        for (i = 0; i < 7; i++) {
-            if (synth->held_keys[i] == key)
-                break;
-        }
-        for (; i > 0; i--) {
-            synth->held_keys[i] = synth->held_keys[i - 1];
-        }
-        synth->held_keys[0] = key;
-        // XDB_MESSAGE(XDB_NOTE, " note-on key list after: %d %d %d %d %d %d %d %d\n", synth->held_keys[0], synth->held_keys[1], synth->held_keys[2], synth->held_keys[3], synth->held_keys[4], synth->held_keys[5], synth->held_keys[6], synth->held_keys[7]);
-
+    /* check if new key is already in the list; if so, move it to the
+     * top of the list, otherwise shift the other keys down and add it
+     * to the top of the list. */
+    for (i = 0; i < 7; i++) {
+        if (synth->held_keys[i] == key)
+            break;
     }
+    for (; i > 0; i--) {
+        synth->held_keys[i] = synth->held_keys[i - 1];
+    }
+    synth->held_keys[0] = key;
 
     if (!_PLAYING(voice)) {
 
@@ -146,6 +145,28 @@ xsynth_voice_set_release_phase(xsynth_voice_t *voice)
 }
 
 /*
+ * xsynth_voice_remove_held_key
+ */
+inline void
+xsynth_voice_remove_held_key(xsynth_synth_t *synth, unsigned char key)
+{
+    int i;
+
+    /* check if this key is in list of held keys; if so, remove it and
+     * shift the other keys up */
+    for (i = 7; i >= 0; i--) {
+        if (synth->held_keys[i] == key)
+            break;
+    }
+    if (i >= 0) {
+        for (; i < 7; i++) {
+            synth->held_keys[i] = synth->held_keys[i + 1];
+        }
+        synth->held_keys[7] = -1;
+    }
+}
+
+/*
  * xsynth_voice_note_off
  */
 void
@@ -159,28 +180,10 @@ xsynth_voice_note_off(xsynth_synth_t *synth, xsynth_voice_t *voice,
     /* save release velocity */
     voice->rvelocity = rvelocity;
 
-    if (synth->monophonic) {
+    previous_top_key = synth->held_keys[0];
 
-        /* remove this key from list of held keys */
-
-        int i;
-
-        /* check if this key is in list of held keys; if so, remove it and
-         * shift the other keys up */
-        // XDB_MESSAGE(XDB_NOTE, " note-off key list before: %d %d %d %d %d %d %d %d\n", synth->held_keys[0], synth->held_keys[1], synth->held_keys[2], synth->held_keys[3], synth->held_keys[4], synth->held_keys[5], synth->held_keys[6], synth->held_keys[7]);
-        previous_top_key = synth->held_keys[0];
-        for (i = 7; i >= 0; i--) {
-            if (synth->held_keys[i] == key)
-                break;
-        }
-        if (i >= 0) {
-            for (; i < 7; i++) {
-                synth->held_keys[i] = synth->held_keys[i + 1];
-            }
-            synth->held_keys[7] = -1;
-        }
-        // XDB_MESSAGE(XDB_NOTE, " note-off key list after: %d %d %d %d %d %d %d %d\n", synth->held_keys[0], synth->held_keys[1], synth->held_keys[2], synth->held_keys[3], synth->held_keys[4], synth->held_keys[5], synth->held_keys[6], synth->held_keys[7]);
-    }
+    /* remove this key from list of held keys */
+    xsynth_voice_remove_held_key(synth, key);
 
     if (synth->monophonic) {  /* monophonic mode */
 
@@ -287,7 +290,7 @@ xsynth_voice_set_ports(xsynth_synth_t *synth, xsynth_patch_t *patch)
     *(synth->eg2_amount_f)      = patch->eg2_amount_f;
     *(synth->vcf_cutoff)        = patch->vcf_cutoff;
     *(synth->vcf_qres)          = patch->vcf_qres;
-    *(synth->vcf_4pole)         = (float)patch->vcf_4pole;
+    *(synth->vcf_mode)          = (float)patch->vcf_mode;
     *(synth->glide_time)        = patch->glide_time;
     *(synth->volume)            = patch->volume;
 }

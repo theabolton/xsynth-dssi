@@ -50,8 +50,11 @@ extern GtkWidget *lfo_waveform_pixmap;
 
 extern GtkWidget *name_entry;
 
-extern GtkWidget *monophonic_option_menu;
+extern GtkObject *tuning_adj;
 extern GtkObject *polyphony_adj;
+extern GtkWidget *monophonic_option_menu;
+extern GtkWidget *glide_option_menu;
+extern GtkObject *bendrange_adj;
 
 extern GtkObject *voice_widget[];
 

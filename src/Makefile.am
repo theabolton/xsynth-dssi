@@ -1,6 +1,10 @@
 ## Process this file with automake to produce Makefile.in
 
+if BUILD_GUI
 bin_PROGRAMS = Xsynth_gtk
+else
+bin_PROGRAMS =
+endif
 
 bindir = $(libdir)/dssi/xsynth-dssi
 
@@ -48,6 +52,7 @@ Xsynth_gtk_LDADD = @GTK_LIBS@ -lm -llo -lpthread
 xsynth_dssi_la_SOURCES = \
 	gui_data.h \
 	gui_friendly_patches.c \
+	minblep_tables.c \
 	xsynth-dssi.c \
 	xsynth.h \
 	xsynth_data.c \
@@ -58,6 +63,7 @@ xsynth_dssi_la_SOURCES = \
 	xsynth_types.h \
 	xsynth_voice.c \
 	xsynth_voice.h \
+	xsynth_voice_blosc.h \
 	xsynth_voice_render.c
 
 xsynth_dssi_la_LIBADD = -lm

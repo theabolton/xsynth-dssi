@@ -158,22 +158,28 @@ osc_configure_handler(const char *path, const char *types, lo_arg **argv,
 
         /* !FIX!  Dang, this is gonna be hard.... */
 
-    } else if (!strcmp(key, "monophonic")) {
-
-        update_monophonic(value);
-
     } else if (!strcmp(key, "polyphony")) {
 
         update_polyphony(value);
 
-#ifdef DSSI_PROJECT_DIRECTORY_KEY
+    } else if (!strcmp(key, "monophonic")) {
+
+        update_monophonic(value);
+
+    } else if (!strcmp(key, "glide")) {
+
+        update_glide(value);
+
+    } else if (!strcmp(key, "bendrange")) {
+
+        update_bendrange(value);
+
     } else if (!strcmp(key, DSSI_PROJECT_DIRECTORY_KEY)) {
 
         if (project_directory)
             free(project_directory);
         project_directory = strdup(value);
 
-#endif
     } else {
 
         return osc_debug_handler(path, types, argv, argc, msg, user_data);

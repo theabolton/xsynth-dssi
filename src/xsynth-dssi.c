@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <pthread.h>
 
 #include <ladspa.h>
 #include "dssi.h"
@@ -45,6 +46,39 @@ static DSSI_Descriptor   *xsynth_DSSI_descriptor = NULL;
 static void xsynth_cleanup(LADSPA_Handle instance);
 static void xsynth_run_synth(LADSPA_Handle instance, unsigned long sample_count,
                              snd_seq_event_t *events, unsigned long event_count);
+
+/* ---- mutual exclusion ---- */
+
+static inline int
+dssp_voicelist_mutex_trylock(xsynth_synth_t *synth)
+{
+    int rc;
+
+    /* Attempt the mutex lock */
+    rc = pthread_mutex_trylock(&synth->voicelist_mutex);
+    if (rc) {
+        synth->voicelist_mutex_grab_failed = 1;
+        return rc;
+    }
+    /* Clean up if a previous mutex grab failed */
+    if (synth->voicelist_mutex_grab_failed) {
+        xsynth_synth_all_voices_off(synth);
+        synth->voicelist_mutex_grab_failed = 0;
+    }
+    return 0;
+}
+
+inline int
+dssp_voicelist_mutex_lock(xsynth_synth_t *synth)
+{
+    return pthread_mutex_lock(&synth->voicelist_mutex);
+}
+
+inline int
+dssp_voicelist_mutex_unlock(xsynth_synth_t *synth)
+{
+    return pthread_mutex_unlock(&synth->voicelist_mutex);
+}
 
 /* ---- LADSPA interface ---- */
 
@@ -74,8 +108,14 @@ xsynth_instantiate(const LADSPA_Descriptor *descriptor, unsigned long sample_rat
     synth->polyphony = XSYNTH_DEFAULT_POLYPHONY;
     synth->voices = XSYNTH_DEFAULT_POLYPHONY;
     synth->monophonic = 0;
+    synth->glide = 0;
+    synth->last_noteon_pitch = 0.0f;
+    pthread_mutex_init(&synth->voicelist_mutex, NULL);
+    synth->voicelist_mutex_grab_failed = 0;
+    pthread_mutex_init(&synth->patches_mutex, NULL);
     synth->patch_count = 0;
     synth->patches = NULL;
+    synth->pending_program_change = -1;
     synth->current_program = -1;
     synth->project_dir = NULL;
     xsynth_data_friendly_patches(synth);
@@ -122,10 +162,10 @@ xsynth_connect_port(LADSPA_Handle instance, unsigned long port, LADSPA_Data *dat
       case XSYNTH_PORT_EG2_AMOUNT_F:       synth->eg2_amount_f      = data;  break;
       case XSYNTH_PORT_VCF_CUTOFF:         synth->vcf_cutoff        = data;  break;
       case XSYNTH_PORT_VCF_QRES:           synth->vcf_qres          = data;  break;
-      case XSYNTH_PORT_VCF_4POLE:          synth->vcf_4pole         = data;  break;
+      case XSYNTH_PORT_VCF_MODE:           synth->vcf_mode          = data;  break;
       case XSYNTH_PORT_GLIDE_TIME:         synth->glide_time        = data;  break;
       case XSYNTH_PORT_VOLUME:             synth->volume            = data;  break;
-      /* added in v0.2: */
+      /* added in v0.1.1: */
       case XSYNTH_PORT_TUNING:             synth->tuning            = data;  break;
       case XSYNTH_PORT_EG1_VEL_SENS:       synth->eg1_vel_sens      = data;  break;
       case XSYNTH_PORT_EG2_VEL_SENS:       synth->eg2_vel_sens      = data;  break;
@@ -229,13 +269,21 @@ xsynth_configure(LADSPA_Handle instance, const char *key, const char *value)
 
         return xsynth_synth_handle_load((xsynth_synth_t *)instance, value);
 
+    } else if (!strcmp(key, "polyphony")) {
+
+        return xsynth_synth_handle_polyphony((xsynth_synth_t *)instance, value);
+
     } else if (!strcmp(key, "monophonic")) {
 
         return xsynth_synth_handle_monophonic((xsynth_synth_t *)instance, value);
 
-    } else if (!strcmp(key, "polyphony")) {
+    } else if (!strcmp(key, "glide")) {
 
-        return xsynth_synth_handle_polyphony((xsynth_synth_t *)instance, value);
+        return xsynth_synth_handle_glide((xsynth_synth_t *)instance, value);
+
+    } else if (!strcmp(key, "bendrange")) {
+
+        return xsynth_synth_handle_bendrange((xsynth_synth_t *)instance, value);
 
     } else if (!strcmp(key, DSSI_PROJECT_DIRECTORY_KEY)) {
 
@@ -276,11 +324,38 @@ xsynth_get_program(LADSPA_Handle instance, unsigned long index)
  * implements DSSI (*select_program)()
  */
 void
-xsynth_select_program(LADSPA_Handle instance, unsigned long bank,
+xsynth_select_program(LADSPA_Handle handle, unsigned long bank,
                       unsigned long program)
 {
+    xsynth_synth_t *synth = (xsynth_synth_t *)handle;
+
     XDB_MESSAGE(XDB_DSSI, " xsynth_select_program called with %lu and %lu\n", bank, program);
-    xsynth_synth_select_program((xsynth_synth_t *)instance, bank, program);
+
+    /* Attempt the patch mutex, return if lock fails. */
+    if (pthread_mutex_trylock(&synth->patches_mutex)) {
+        synth->pending_program_change = program;
+        return;
+    }
+
+    xsynth_synth_select_program(synth, bank, program);
+
+    pthread_mutex_unlock(&synth->patches_mutex);
+}
+
+/*
+ * dssp_handle_pending_program_change
+ */
+static inline void
+dssp_handle_pending_program_change(xsynth_synth_t *synth)
+{
+    /* Attempt the patch mutex, return if lock fails. */
+    if (pthread_mutex_trylock(&synth->patches_mutex))
+        return;
+
+    xsynth_synth_select_program(synth, 0, synth->pending_program_change);
+    synth->pending_program_change = -1;
+
+    pthread_mutex_unlock(&synth->patches_mutex);
 }
 
 /*
@@ -309,9 +384,7 @@ static inline void
 xsynth_handle_event(xsynth_synth_t *synth, snd_seq_event_t *event)
 {
     XDB_MESSAGE(XDB_DSSI, " xsynth_handle_event called with event type %d\n", event->type);
-    /* -FIX- there's a potential race condition here with host thread calling
-     * configure(); add mutex, if trylock fails, do all_voices_off, flush event,
-     * and continue */
+
     switch (event->type) {
       case SND_SEQ_EVENT_NOTEOFF:
         xsynth_synth_note_off(synth, event->data.note.note, event->data.note.velocity);
@@ -358,6 +431,15 @@ xsynth_run_synth(LADSPA_Handle instance, unsigned long sample_count,
     unsigned long event_index = 0;
     unsigned long burst_size;
 
+    /* attempt the mutex, return only silence if lock fails. */
+    if (dssp_voicelist_mutex_trylock(synth)) {
+        memset(synth->output, 0, sizeof(LADSPA_Data) * sample_count);
+        return;
+    }
+
+    if (synth->pending_program_change > -1)
+        dssp_handle_pending_program_change(synth);
+
     while (samples_done < sample_count) {
         if (!synth->nugget_remains)
             synth->nugget_remains = XSYNTH_NUGGET_SIZE;
@@ -403,6 +485,8 @@ xsynth_run_synth(LADSPA_Handle instance, unsigned long sample_count,
 #if defined(XSYNTH_DEBUG) && (XSYNTH_DEBUG & XDB_AUDIO)
 *synth->output += 0.10f; /* add a 'buzz' to output so there's something audible even when quiescent */
 #endif /* defined(XSYNTH_DEBUG) && (XSYNTH_DEBUG & XDB_AUDIO) */
+
+    dssp_voicelist_mutex_unlock(synth);
 }
 
 // optional:

@@ -83,8 +83,7 @@ parse_name(char *buf, char *name)
 }
 
 int
-xsynth_data_read_patch(FILE *file, xsynth_patch_t *patch, unsigned long bank,
-                        unsigned long program)
+xsynth_data_read_patch(FILE *file, xsynth_patch_t *patch)
 {
     int format, i;
     char buf[256], buf2[90];
@@ -170,7 +169,7 @@ xsynth_data_read_patch(FILE *file, xsynth_patch_t *patch, unsigned long bank,
     if (!fgets(buf, 256, file)) return 0;
     if (sscanf(buf, " vcf %f %f %d", &tmp.vcf_cutoff, &tmp.vcf_qres, &i) != 3)
         return 0;
-    tmp.vcf_4pole = (unsigned char)i;
+    tmp.vcf_mode = (unsigned char)i;
 
     if (!fgets(buf, 256, file)) return 0;
     if (sscanf(buf, " glide %f", &tmp.glide_time) != 1)
