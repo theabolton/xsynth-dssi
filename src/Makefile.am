@@ -1,12 +1,12 @@
 ## Process this file with automake to produce Makefile.in
 
 if BUILD_GUI
-bin_PROGRAMS = Xsynth_gtk
+ui_PROGRAMS = Xsynth_gtk
 else
-bin_PROGRAMS =
+ui_PROGRAMS =
 endif
 
-bindir = $(libdir)/dssi/xsynth-dssi
+uidir = $(libdir)/dssi/xsynth-dssi
 
 plugindir = $(libdir)/dssi
 

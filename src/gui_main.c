@@ -74,7 +74,7 @@ osc_build_path(char *base_path, char *method)
         GDB_MESSAGE(GDB_OSC, ": out of memory!\n");
         exit(1);
     }
-    return strdup(buffer);
+    return full_path;
 }
 
 static void

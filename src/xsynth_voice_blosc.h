@@ -36,32 +36,32 @@
  */
 
 #ifdef BLOSC_SINGLE1
-#define BLOSC_THIS(x, ...) blosc_single1##x(__VA_ARGS__)
+/* #define BLOSC_THIS(x, ...) blosc_single1##x(__VA_ARGS__) */
+#define BLOSC_THIS(x, args...) blosc_single1##x(args)
 #define BLOSC_W_TABLE 0
 #endif
 #ifdef BLOSC_MASTER
-#define BLOSC_THIS(x, ...) blosc_master##x(__VA_ARGS__)
+#define BLOSC_THIS(x, args...) blosc_master##x(args)
 #define BLOSC_W_TABLE 0
 #endif
 #ifdef BLOSC_SINGLE2
-#define BLOSC_THIS(x, ...) blosc_single2##x(__VA_ARGS__)
+#define BLOSC_THIS(x, args...) blosc_single2##x(args)
 #define BLOSC_W_TABLE 1
 #endif
 #ifdef BLOSC_SLAVE
-#define BLOSC_THIS(x, ...) blosc_slave##x(__VA_ARGS__)
+#define BLOSC_THIS(x, args...) blosc_slave##x(args)
 #define BLOSC_W_TABLE 1
 #endif
 
 /* ==== blosc_*sine functions ==== */
 
 /* static inline */ void
-BLOSC_THIS(sine, unsigned long sample_count,
-           xsynth_voice_t *voice, struct blosc *osc,
-           int index, float gain,
 #if BLOSC_W_TABLE
-           float *wp)
+BLOSC_THIS(sine, unsigned long sample_count, xsynth_voice_t *voice,
+           struct blosc *osc, int index, float gain, float *wp)
 #else
-           float w)
+BLOSC_THIS(sine, unsigned long sample_count, xsynth_voice_t *voice,
+           struct blosc *osc, int index, float gain, float w)
 #endif
 {
     unsigned long sample;
@@ -135,13 +135,12 @@ BLOSC_THIS(sine, unsigned long sample_count,
 /* ==== blosc_*tri functions ==== */
 
 /* static inline */ void
-BLOSC_THIS(tri, unsigned long sample_count,
-           xsynth_voice_t *voice, struct blosc *osc,
-           int index, float gain,
 #if BLOSC_W_TABLE
-           float *wp)
+BLOSC_THIS(tri, unsigned long sample_count, xsynth_voice_t *voice,
+           struct blosc *osc, int index, float gain, float *wp)
 #else
-           float w)
+BLOSC_THIS(tri, unsigned long sample_count, xsynth_voice_t *voice,
+           struct blosc *osc, int index, float gain, float w)
 #endif
 {
     unsigned long sample;
@@ -292,13 +291,12 @@ BLOSC_THIS(tri, unsigned long sample_count,
 /* ==== blosc_*sawup functions ==== */
 
 /* static inline */ void
-BLOSC_THIS(sawup, unsigned long sample_count,
-           xsynth_voice_t *voice, struct blosc *osc,
-           int index, float gain,
 #if BLOSC_W_TABLE
-           float *wp)
+BLOSC_THIS(sawup, unsigned long sample_count, xsynth_voice_t *voice,
+           struct blosc *osc, int index, float gain, float *wp)
 #else
-           float w)
+BLOSC_THIS(sawup, unsigned long sample_count, xsynth_voice_t *voice,
+           struct blosc *osc, int index, float gain, float w)
 #endif
 {
     unsigned long sample;
@@ -364,13 +362,12 @@ BLOSC_THIS(sawup, unsigned long sample_count,
 /* ==== blosc_*sawdown functions ==== */
 
 /* static inline */ void
-BLOSC_THIS(sawdown, unsigned long sample_count,
-           xsynth_voice_t *voice, struct blosc *osc,
-           int index, float gain,
 #if BLOSC_W_TABLE
-           float *wp)
+BLOSC_THIS(sawdown, unsigned long sample_count, xsynth_voice_t *voice,
+           struct blosc *osc, int index, float gain, float *wp)
 #else
-           float w)
+BLOSC_THIS(sawdown, unsigned long sample_count, xsynth_voice_t *voice,
+           struct blosc *osc, int index, float gain, float w)
 #endif
 {
     unsigned long sample;
@@ -436,13 +433,12 @@ BLOSC_THIS(sawdown, unsigned long sample_count,
 /* ==== blosc_*rect functions ==== */
 
 /* static inline */ void
-BLOSC_THIS(rect, unsigned long sample_count,
-           xsynth_voice_t *voice, struct blosc *osc,
-           int index, float gain,
 #if BLOSC_W_TABLE
-           float *wp)
+BLOSC_THIS(rect, unsigned long sample_count, xsynth_voice_t *voice,
+           struct blosc *osc, int index, float gain, float *wp)
 #else
-           float w)
+BLOSC_THIS(rect, unsigned long sample_count, xsynth_voice_t *voice,
+           struct blosc *osc, int index, float gain, float w)
 #endif
 {
     unsigned long sample;
@@ -590,13 +586,12 @@ BLOSC_THIS(rect, unsigned long sample_count,
 /* ==== blosc_* dispatch function ==== */
 
 static inline void
-BLOSC_THIS(, unsigned long sample_count,
-           xsynth_voice_t *voice, struct blosc *osc,
-           int index, float gain,
 #if BLOSC_W_TABLE
-           float *w)
+BLOSC_THIS(, unsigned long sample_count, xsynth_voice_t *voice,
+           struct blosc *osc, int index, float gain, float *w)
 #else
-           float w)
+BLOSC_THIS(, unsigned long sample_count, xsynth_voice_t *voice,
+           struct blosc *osc, int index, float gain, float w)
 #endif
 {
     switch (osc->waveform) {

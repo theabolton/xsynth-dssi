@@ -756,6 +756,35 @@ vcf 50 0.0399 0
 glide 0.984375
 volume 0.5
 xsynth-dssi patch end
+# ==================== new after 0.9.0 ====================
+# Xsynth-dssi patch
+xsynth-dssi patch format 0 begin
+name =============%20New%20after%200.9.0:
+osc1 1 0 0.5
+osc2 1 0 0.5
+sync 0
+balance 0.5
+lfo 0.1 0 0 0
+eg1 0.1 0.1 1 0.1 0 0
+eg2 0.1 0.1 1 0.1 0 0
+vcf 50 0 0
+glide 0.984375
+volume 0.5
+xsynth-dssi patch end
+# Xsynth-dssi patch
+xsynth-dssi patch format 1 begin
+name Quick%20Strings
+osc1 0.997923 3 0.5
+osc2 1.00208 0 0.114681
+sync 0
+balance 0.5
+lfo 0.533199 0 0 0.0350456
+eg1 0.000533199 0.1 1 0.0001 0.291445 0 0
+eg2 0.00287556 0.1 1 0.000267462 0.401611 0 7.15922
+vcf 8.33333 0 2
+glide 0.984375
+volume 0.5
+xsynth-dssi patch end
 # ==================== new voice ====================
 # Xsynth-dssi patch
 xsynth-dssi patch format 0 begin
