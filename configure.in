@@ -20,12 +20,12 @@ AC_PROG_LIBTOOL
 AC_C_BIGENDIAN
 
 dnl Check for GTK+ and PHAT
-AC_ARG_WITH(gtk2, AC_HELP_STRING([--with-gtk2], [use GTK+ 2.0]),
+AC_ARG_WITH(gtk2, AC_HELP_STRING([--with-gtk2], [use GTK+ 2.0 default=yes]),
             [ if test $withval = "yes"; then try_gtk2=yes ;
               else try_gtk2=no ; fi ], try_gtk2=yes)
-AC_ARG_WITH(phat, AC_HELP_STRING([--with-phat], [use the PHAT GTK+ widget library]),
+AC_ARG_WITH(phat, AC_HELP_STRING([--with-phat], [use the PHAT GTK+ widget library default=no]),
             [ if test $withval = "yes"; then try_phat=yes ;
-              else try_phat=no ; fi ], try_phat=yes)
+              else try_phat=no ; fi ], try_phat=no)
 with_gtk=no
 with_phat=no
 dnl First look for GTK+ 2.x, unless '--without-gtk2' was specified.

@@ -69,17 +69,19 @@ xsynth_voice_note_on(xsynth_synth_t *synth, xsynth_voice_t *voice,
 
         voice->prev_pitch = xsynth_pitch[key];
         voice->target_pitch = voice->prev_pitch;
-        voice->lfo_pos = 0.0f;
-        voice->eg1 = 0.0f;
+        if (!_PLAYING(voice)) {
+            voice->lfo_pos = 0.0f;
+            voice->eg1 = 0.0f;
+            voice->eg2 = 0.0f;
+            voice->osc1_pos = 0.0f;
+            voice->osc2_pos = 0.0f;
+            voice->delay1 = 0.0f;
+            voice->delay2 = 0.0f;
+            voice->delay3 = 0.0f;
+            voice->delay4 = 0.0f;
+        }
         voice->eg1_phase = 0;
-        voice->eg2 = 0.0f;
         voice->eg2_phase = 0;
-        voice->osc1_pos = 0.0f;
-        voice->osc2_pos = 0.0f;
-        voice->delay1 = 0.0f;
-        voice->delay2 = 0.0f;
-        voice->delay3 = 0.0f;
-        voice->delay4 = 0.0f;
         xsynth_voice_update_pressure_mod(synth, voice);
 
     } else {

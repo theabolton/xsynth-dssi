@@ -20,7 +20,7 @@
  * PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public
- * License along with this library; if not, write to the Free
+ * License along with this program; if not, write to the Free
  * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307, USA.
  */
@@ -476,7 +476,7 @@ xsynth_synth_handle_load(xsynth_synth_t *synth, const char *value)
     /* -FIX- implement bank support */
     if (!synth->patches) {
         if (!(synth->patches = (xsynth_patch_t *)malloc(128 * sizeof(xsynth_patch_t))))
-            return dssi_configure_message("load error: could not allocate memory for patch bank from file '%s'", value);
+            return dssi_configure_message("load error: could not allocate memory for patch bank");
     }
 
     if ((fh = fopen(value, "rb")) == NULL) {
@@ -493,8 +493,6 @@ xsynth_synth_handle_load(xsynth_synth_t *synth, const char *value)
     if (count > synth->patch_count)
         synth->patch_count = count;
 
-    /* dssi.h says return NULL for success 
-       return dssi_configure_message("loaded %d patches", count); */
     return NULL;
 }
 
@@ -528,8 +526,7 @@ xsynth_synth_handle_monophonic(xsynth_synth_t *synth, const char *value)
         synth->voices = 1;
 
     }
-    /* dssi.h says return NULL for success 
-       return dssi_configure_message("monophonic mode %s", value);*/
+
     return NULL;
 }
 
@@ -562,8 +559,6 @@ xsynth_synth_handle_polyphony(xsynth_synth_t *synth, const char *value)
         }
     }
 
-    /* dssi.h says return NULL for success 
-       return dssi_configure_message("polyphony set to %d", polyphony); */
     return NULL;
 }
 
