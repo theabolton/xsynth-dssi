@@ -493,7 +493,9 @@ xsynth_synth_handle_load(xsynth_synth_t *synth, const char *value)
     if (count > synth->patch_count)
         synth->patch_count = count;
 
-    return dssi_configure_message("loaded %d patches", count);
+    /* dssi.h says return NULL for success 
+       return dssi_configure_message("loaded %d patches", count); */
+    return NULL;
 }
 
 /*
@@ -526,7 +528,9 @@ xsynth_synth_handle_monophonic(xsynth_synth_t *synth, const char *value)
         synth->voices = 1;
 
     }
-    return dssi_configure_message("monophonic mode %s", value);
+    /* dssi.h says return NULL for success 
+       return dssi_configure_message("monophonic mode %s", value);*/
+    return NULL;
 }
 
 /*
@@ -558,7 +562,9 @@ xsynth_synth_handle_polyphony(xsynth_synth_t *synth, const char *value)
         }
     }
 
-    return dssi_configure_message("polyphony set to %d", polyphony);
+    /* dssi.h says return NULL for success 
+       return dssi_configure_message("polyphony set to %d", polyphony); */
+    return NULL;
 }
 
 /*
