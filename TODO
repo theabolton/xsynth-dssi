@@ -1,0 +1,55 @@
+Before first release
+====================
+
+- improve automake/autoconf setup (autoscan?), use pkgconfig for
+    liblo, improve handling of dssi.h until such time as we can
+    expect it to be installed somewhere.
+
+- implement osc_configure_handler()
+
+- add 'exiting' method
+
+- add some documentation to the stuff in extra/, plus make sure the
+    dump programs are using the current format.
+
+- clean up all '!FIX!'es
+
+- complete documention
+    
+
+Needs to be done
+================
+
+- GUI: fix blinking of Patches clist when patch edit widgets are
+    updated
+
+- render: replace oscillator code with band-limited oscillators, and
+    if a BL hard-sync implementation can't be found, try slew
+    limiting the sync'd oscillator to at least reduce aliasing
+
+- plugin: add mutexes on configure + event handlers in xsynth-dssi.c,
+    xsynth_synth.c
+
+- GUI: add patch import (just set values, select Patch Edit tab)
+
+Wish list
+=========
+
+? GUI: should Patch Edit Save Changes select the program number of
+    the saved-to patch?
+
+- render: fix resonance limiting so it doesn't blork at zero with
+    high cutoffs
+
+- GUI Patch Edit: show high precision representation of slider value
+    in status bar.
+
+- render: move envelope conditionals outside inner loop; implement
+    ramping of modulators (pitch bend, mod wheel, pressure, ...)
+
+- all: make modwheel->cutoff and pressure->resonance modulations
+    configurable
+
+? interaction between MIDI volume controller and volume saved in
+    patch on program change is not pleasant
+

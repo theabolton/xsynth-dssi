@@ -1,0 +1,294 @@
+# Xsynth-dssi patch (was bank 0, program 5)
+xsynth-dssi patch format 0 begin
+name strings
+osc1 1.000000 2 0.500000
+osc2 1.006278 2 0.500000
+sync 0
+balance 0.500000
+lfo 0.100000 0 0.000000 0.000000
+eg1 0.000200 0.100000 1.000000 0.000100 0.000000 14.572234
+eg2 0.100000 0.100000 1.000000 0.100000 0.000000 0.000001
+vcf 11.425786 0.388616 1
+glide 0.984375
+volume 0.490000
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 20)
+xsynth-dssi patch format 0 begin
+name A-ha
+osc1 1.000000 2 0.500000
+osc2 2.002774 2 0.000000
+sync 0
+balance 0.530000
+lfo 0.181970 0 0.000000 0.000000
+eg1 0.057544 0.000912 0.650000 0.000132 0.000000 0.000000
+eg2 0.075858 0.005248 0.590000 0.000331 0.000000 31.000000
+vcf 11.000000 0.379050 0
+glide 1.000000
+volume 0.540000
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 19)
+xsynth-dssi patch format 0 begin
+name Brass
+osc1 1.000000 2 0.210000
+osc2 1.004168 2 0.250000
+sync 0
+balance 0.560000
+lfo 2.511887 0 0.000000 0.050000
+eg1 0.083176 0.000051 0.670000 0.000191 0.000000 0.000000
+eg2 0.000912 0.000398 0.730000 0.000069 0.000000 14.500001
+vcf 0.000000 0.897750 1
+glide 0.984375
+volume 0.470000
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 16)
+xsynth-dssi patch format 0 begin
+name Xylophone
+osc1 1.000000 0 0.500000
+osc2 4.000000 0 0.500000
+sync 0
+balance 0.500000
+lfo 0.100000 0 0.000000 0.000000
+eg1 0.069183 0.000275 0.000000 0.000275 0.000000 0.000000
+eg2 0.091201 0.000028 0.000000 0.000023 0.000000 50.000000
+vcf 0.000000 1.983032 0
+glide 0.984375
+volume 0.490000
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 17)
+xsynth-dssi patch format 0 begin
+name Organ%202
+osc1 1.000000 0 0.500000
+osc2 2.002774 4 0.500000
+sync 0
+balance 0.410000
+lfo 6.622173 0 0.000000 0.071000
+eg1 0.047863 0.100000 1.000000 0.013183 0.000000 0.000001
+eg2 0.063096 0.100000 1.000000 0.015849 0.000000 0.000001
+vcf 6.500000 0.059850 1
+glide 1.000000
+volume 0.500000
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 18)
+xsynth-dssi patch format 0 begin
+name French%20Horn
+osc1 1.000000 5 0.210000
+osc2 1.000000 2 0.250000
+sync 0
+balance 0.560000
+lfo 3.981072 0 0.000000 0.170000
+eg1 0.043652 0.000051 0.000000 0.000142 0.000000 0.000000
+eg2 0.000100 0.000044 0.000000 0.000083 0.000000 12.500000
+vcf 0.000000 1.197000 1
+glide 0.984375
+volume 0.530000
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 2)
+xsynth-dssi patch format 0 begin
+name plucked
+osc1 1.000000 2 0.500000
+osc2 1.006278 2 0.500000
+sync 0
+balance 0.500000
+lfo 0.100000 0 0.000000 0.000000
+eg1 0.013347 0.000198 0.000000 0.000215 0.000000 0.000001
+eg2 0.100000 0.100000 1.000000 0.100000 0.000000 0.000001
+vcf 10.932637 1.390072 1
+glide 0.984375
+volume 0.509221
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 0)
+xsynth-dssi patch format 0 begin
+name bell
+osc1 1.000000 1 0.500000
+osc2 4.000000 1 0.500000
+sync 0
+balance 0.500000
+lfo 0.100000 0 0.000000 0.000000
+eg1 0.100000 0.000051 0.000000 0.000142 0.000000 0.000001
+eg2 0.100000 0.100000 1.000000 0.100000 0.000000 0.000001
+vcf 15.492557 1.798714 1
+glide 0.984375
+volume 0.470000
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 6)
+xsynth-dssi patch format 0 begin
+name sync_bass
+osc1 1.000000 4 0.500000
+osc2 2.017375 2 0.507856
+sync 1
+balance 0.500000
+lfo 0.100000 1 0.000000 0.000000
+eg1 0.100000 0.000046 0.000000 0.000110 0.275399 50.000000
+eg2 0.100000 0.100000 1.000000 0.100000 0.000000 0.000001
+vcf 0.000001 1.379578 1
+glide 0.984375
+volume 0.500000
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 7)
+xsynth-dssi patch format 0 begin
+name sync_sweep
+osc1 1.000000 2 0.500000
+osc2 1.000000 2 0.500000
+sync 1
+balance 0.500000
+lfo 0.100000 1 0.000000 0.000000
+eg1 0.002475 0.100000 1.000000 0.000083 0.000000 0.000001
+eg2 0.000026 0.100000 1.000000 0.000024 1.000000 0.000001
+vcf 50.000000 0.100000 1
+glide 0.984375
+volume 0.491842
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 10)
+xsynth-dssi patch format 0 begin
+name Gramma's%20Organ
+osc1 1.000000 1 0.500000
+osc2 2.000001 1 0.500000
+sync 0
+balance 0.430000
+lfo 7.585775 0 0.003000 0.000000
+eg1 0.047863 0.100000 1.000000 0.013183 0.000000 0.000001
+eg2 0.063096 0.100000 1.000000 0.015849 0.000000 0.000001
+vcf 15.000000 0.099750 1
+glide 1.000000
+volume 0.500000
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 11)
+xsynth-dssi patch format 0 begin
+name Long%20Portamento%20(turn%20mono%20on)
+osc1 1.000000 1 0.500000
+osc2 1.623660 2 0.500000
+sync 1
+balance 0.500000
+lfo 0.100000 0 0.714795 0.000000
+eg1 0.017378 0.100000 1.000000 0.000275 0.000000 0.000001
+eg2 0.052481 0.000331 0.000000 0.000331 0.000000 0.000000
+vcf 10.000000 1.356600 1
+glide 0.002509
+volume 0.500000
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 12)
+xsynth-dssi patch format 0 begin
+name Owww!
+osc1 1.000000 1 0.500000
+osc2 1.419295 2 0.791445
+sync 1
+balance 0.488842
+lfo 0.247489 0 0.000000 0.000000
+eg1 0.100000 0.000146 0.885319 0.000174 0.295167 0.000001
+eg2 0.100000 0.000071 0.000000 0.000102 0.000000 50.000000
+vcf 0.000001 1.501412 1
+glide 0.984375
+volume 0.480000
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 13)
+xsynth-dssi patch format 0 begin
+name Tube%20Growl
+osc1 1.000000 2 0.500000
+osc2 1.819377 5 0.500000
+sync 1
+balance 0.500000
+lfo 0.100000 1 0.000000 0.000000
+eg1 0.012188 0.100000 1.000000 0.000058 0.000000 17.481241
+eg2 0.000021 0.000022 0.631621 0.000024 1.000000 0.000001
+vcf 0.000001 1.592584 1
+glide 0.984375
+volume 0.460000
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 4)
+xsynth-dssi patch format 0 begin
+name squelchy_bass
+osc1 1.000000 2 0.516291
+osc2 1.000000 2 0.492144
+sync 1
+balance 0.500000
+lfo 0.100000 0 0.114681 0.800101
+eg1 0.100000 0.000046 0.000000 0.000100 0.154198 50.000000
+eg2 0.100000 0.000054 0.000000 0.000046 0.000000 50.000000
+vcf 0.000001 1.662500 1
+glide 0.984375
+volume 0.390000
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 3)
+xsynth-dssi patch format 0 begin
+name reso_sweep
+osc1 1.000000 2 0.500000
+osc2 2.009668 2 0.482832
+sync 0
+balance 0.505304
+lfo 0.100000 1 0.000000 0.000000
+eg1 0.002475 0.100000 1.000000 0.000083 0.000000 0.000001
+eg2 0.005541 0.000023 0.000000 0.000024 0.000000 50.000000
+vcf 11.933340 1.833912 1
+glide 0.984375
+volume 0.360000
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 8)
+xsynth-dssi patch format 0 begin
+name theremin
+osc1 1.000000 0 0.500000
+osc2 4.000000 0 0.500000
+sync 0
+balance 1.000000
+lfo 10.000000 0 0.050261 0.000000
+eg1 0.000046 0.100000 1.000000 0.000010 0.000000 0.000001
+eg2 0.100000 0.100000 1.000000 0.100000 0.000000 0.000001
+vcf 50.000000 0.000000 0
+glide 0.009709
+volume 0.333333
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 14)
+xsynth-dssi patch format 0 begin
+name Twub
+osc1 1.000000 3 0.500000
+osc2 1.536558 5 0.255417
+sync 1
+balance 0.488842
+lfo 0.247489 0 0.193056 0.000000
+eg1 0.100000 0.000051 0.000000 0.000142 0.000000 0.000001
+eg2 0.006125 0.040406 0.610166 0.000180 0.000000 7.013886
+vcf 0.623417 1.501412 1
+glide 0.984375
+volume 0.476518
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 15)
+xsynth-dssi patch format 0 begin
+name Wavey
+osc1 1.000000 2 0.500000
+osc2 1.819377 5 0.500000
+sync 1
+balance 0.500000
+lfo 0.256842 1 0.000000 0.769990
+eg1 0.012188 0.100000 1.000000 0.000040 0.000000 17.481241
+eg2 0.000021 0.000073 0.631621 0.000024 1.000000 0.000001
+vcf 10.653481 1.510614 1
+glide 0.087247
+volume 0.430000
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 1)
+xsynth-dssi patch format 0 begin
+name heart_beat
+osc1 1.000000 0 0.500000
+osc2 2.017375 0 0.500000
+sync 0
+balance 1.000000
+lfo 0.932688 0 0.923867 0.000000
+eg1 0.100000 0.100000 1.000000 0.000023 0.000000 0.000001
+eg2 0.100000 0.100000 1.000000 0.100000 0.000000 0.000001
+vcf 0.539044 1.700881 1
+glide 0.984375
+volume 0.234944
+xsynth-dssi patch end
+# Xsynth-dssi patch (was bank 0, program 9)
+xsynth-dssi patch format 0 begin
+name voice
+osc1 1.000000 2 0.500000
+osc2 1.632367 5 0.931722
+sync 0
+balance 1.000000
+lfo 0.100000 0 0.000000 0.000000
+eg1 0.000317 0.000342 0.794001 0.000317 0.000000 0.000001
+eg2 0.000236 0.100000 1.000000 0.000010 0.225724 0.000001
+vcf 15.347219 1.354874 1
+glide 0.984375
+volume 0.458111
+xsynth-dssi patch end

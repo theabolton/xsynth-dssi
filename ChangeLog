@@ -1,0 +1,20 @@
+2004-!FIX! version 0.1.0
+
+* extended documentation.
+* fixed duplicate free of synth->patches [Chris Cannam].
+* fixed OSC MIDI handling (status byte in m[1], not m[0]).
+* added support for new "user-friendly" instance identifier passed
+    to UI as argv[4].
+* temporary patch bank saves now go to ~/.xsynth-dssi/.
+* fixed mis-interpolation bug (lrintf() rounds, not floors....)
+
+2004-05-22 initial alpha release ("v0.01")
+
+* added more documentation.
+* adapted to use automake/autoconf.  Requires automake 1.7+ for the
+    'plugin' macros to build the xsynth-dssi.so correctly.
+* cleaned up patch library, rebuilt friendly patches.
+* header file reorganization.
+* removed all references to channels or 'fluid' or 'fmu' anything.
+* extended the maximum name length to 30.
+

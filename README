@@ -1,0 +1,255 @@
+                                 Xsynth-DSSI
+                                 ===========
+                    A software synthesizer plugin  for the
+                        Disposable Soft Synth Interface
+
+NOTE
+====
+This is an ALPHA snapshot.  Please do not redistribute.
+
+Introduction
+============
+Xsynth-DSSI is a classic-analog (VCOs-VCF-VCA) style software
+synthesizer which operates as a plugin for the Disposable Soft Synth
+Interface (DSSI).  DSSI is a proposal for a plugin API for software
+instruments (soft synths) with user interfaces, permitting them to
+be hosted in-process by Linux audio applications.  More information
+on DSSI can be found at:
+
+  http://dssi.sourceforge.net/
+
+Xsynth-DSSI is written by Sean Bolton, and copyright (c)2004 under the
+GNU General Public License, version 2 or later.  See the enclosed
+file COPYING for details.  While this software is 'free' within the
+requirements of this license, I (Sean) would appreciate any or all
+of the following should you find Xsynth-DSSI useful:
+    - an email stating where you're from and how you're using
+        Xsynth-DSSI, sent to <musound /at/ jps /dot/ net>.
+    - copies of or links to music you've created with Xsynth-DSSI.
+    - any patches you create for Xsynth-DSSI.
+    - suggestions for improving Xsynth-DSSI.
+
+Xsynth-DSSI uses the sound generation code from Steve Brooke's Xsynth
+1.0.2, which is available (also under GPL) at:
+
+  http://www.ibiblio.org/pub/Linux/apps/sound/misc/xsynth-1.0.2.tar.gz
+
+Xsynth-DSSI retains the basic synthesis model of Xsynth, while
+extending it to polyphonic operation as well as operation as a DSSI
+plugin.
+
+Requirements
+============
+Xsynth-DSSI requires the following:
+
+    - GTK+ version 1.2.x.
+    - liblo version 0.5 or 0.6, a library implementing the Open
+        Sound Control protocol, available at
+        http://plugin.org.uk/liblo/
+    - the LADSPA v1.x SDK.
+    - the ALSA headers (DSSI plugins use ALSA structures, but not
+        the actual drivers, so you don't necessarily need the
+        drivers installed.)
+    - a working DSSI host.  Xsynth-DSSI has been tested with the
+        example DSSI host available at the dssi.sourceforge.net
+        address above.
+    - automake 1.7 and autoconf 2.57 or better if you wish to
+        recreate the build files.
+
+Installation
+============
+The enclosed file INSTALL provides generic installation instructions
+which assume I've invoked the proper automake/autoconf magic --
+which I know I haven't completely done yet.  Hopefully you should be
+able to:
+
+1. Unpack the tar file.
+
+2. Execute './configure' with CFLAGS pointing to your liblo headers
+    and LDFLAGS pointing to your liblo library, if they're not in
+    your compiler's default search paths.  For example, I do:
+    
+    $ ./configure --prefix=/opt/audio CFLAGS=-I/opt/audio/include \
+        LDFLAGS=-L/opt/audio/lib
+
+    configure will add '-Wall' and my favorite optimizations to
+    CFLAGS for you if you don't include any '-Wall' or '-O' options.
+    If you're using gcc and wish to provide your own optimization
+    flags, you MUST at least use '-finline' and a non-zero '-O' flag
+    to get decent results.
+
+3. Enable debugging information if you desire: edit the file
+    src/xsynth.h, and define XSYNTH_DEBUG as explained in the
+    comments.
+    
+4. Do 'make'.  Hopefully it should build without warnings (or
+    errors.)
+
+5. 'make install' will install the following:
+
+    <prefix>/lib/dssi/xsynth-dssi.so
+    <prefix>/lib/dssi/xsynth-dssi/Xsynth_gtk
+    <prefix>/share/xsynth-dssi/factory_patches.Xsynth
+    <prefix>/share/xsynth-dssi/patch_library.Xsynth
+
+Feedback on your experiences building Xsynth-DSSI is appreciated.
+
+Operation
+=========
+To run the Xsynth-DSSI plugin under the DSSI example host provided
+in the dssi-0.3.tar.gz distribution, I do the following:
+
+1. Start JACK.
+
+2. Start the DSSI example host, supplying the correct plugin path
+    and filename (substitute <prefix> as appropriate):
+
+    $ DSSI_PATH=<prefix>/lib/dssi dssi_example_host xsynth-dssi.so
+
+    The example host should start, and moments later the Xsynth-DSSI
+    graphic user interface should appear.
+
+3. Use aconnect or kaconnect to connect the example host to a MIDI
+   source, such as vkeybd.
+
+4. Begin playing sounds!  If you get no response, try selecting the
+    'Patch Edit' tab in the Xsynth-DSSI GUI, and click the 'Send
+    Test Note' button.  This sends a note directly via the host to
+    the plugin, so if you hear sound now, look for a problem between
+    the example host and your MIDI source.  If you still don't hear
+    sound, I'd look for a problem between the example host and your
+    output device.  If you continue having trouble, you might
+    recompile with XSYNTH_DEBUG bit 2 set, which will cause the
+    plugin to continuously output a quiet buzz to help debug your
+    outgoing signal path.
+
+Xsynth-DSSI starts up with a small set of sound presets, or
+'patches', that you can select either by selecting the GUI 'Patches'
+tab and clicking on the patch name, or by sending a MIDI program
+change from your MIDI source with the appropriate program number.
+
+File Menu
+---------
+You may load additional patches by selecting 'Load Patch Bank...'
+from the GUI 'File' menu, and pointing the file selection dialog to
+a Xsynth-DSSI patch bank file.  One such file is patch_library.Xsynth,
+which was installed with the plugin, in <prefix>/share/xsynth-dssi/.
+After selecting a patch bank file, you will be asked at which
+program number to begin loading the new patches.  This allows you to
+overwrite the existing patches, or to add the new patches at the
+end.  Note that if the starting program number you select, plus the
+number of patches in the patch file, exceeds 128, the additional
+patches will not be loaded.
+
+Selecting 'Save Patch Bank...' from the 'File' menu will allow you
+to save you patch bank to a file.  It always saves the entire bank.
+
+Patches Tab
+-----------
+Selecting the 'Patches' tab displays a list of all the patches loaded.
+Clicking on the name of a patch causes that patch to be selected.
+
+Patch Edit Tab
+--------------
+This tab allows you to edit patches.
+
+The controls in the VCO1, VCO2, LFO, MIXER, PORTAMENTO, EG1, EG2,
+VCF, and VOLUME sections all offer real-time control of the
+synthesis parameters used by the plugin to create sound.  The voice
+architecture is described in more detail below.
+
+The TEST NOTE controls allow you to send a test note to the plugin,
+by clicking on the 'Send Test Note' button.  Changing the 'Test
+Note' slider will change the pitch of the test note, with 60
+generally considered to be 'Middle C'.
+
+The NAME text box allows you to change the name of a patch.
+
+Once you have edited a patch to your satisfaction, you may save it
+back to the patch bank by clicking the 'Save Changes' button.  You
+will be asked to which program number you would like to save your
+new patch.  If you do not wish to overwrite an existing patch,
+selected the highest available patch number, next to which '(empty)'
+will be displayed, to save your changes to a new slot.
+
+Configuration Tab
+-----------------
+Polyphony: Sets the maximum polyphony for this instance of the
+    plugin.  If you attempt to play more notes than this setting,
+    already-playing notes will be killed so that newer notes can be
+    played.  If you are getting xruns, try reducing this setting.
+
+Monophonic modes:
+    'Off'  - polyphonic operation.
+    'On'   - monophonic operation, where the envelopes are
+             retriggered upon each incoming note on event. 
+    'Once' - monophonic operation, where the envelopes are triggered
+             only on the first note on of a legato phrase -- that
+             is, if you hold one note while playing a second, the
+             envelopes will not be retriggered for the second note. 
+    'Both' - monophonic operation, where the envelopes are
+             retriggered at each note on, and upon note off when
+             other keys are still held.
+
+Voice Architecture
+==================
+!FIX! this section needs to be rewritten, or maybe just written.
+
+MIDI Controller Mapping
+=======================
+Xsynth-DSSI tells the DSSI host to map MIDI volume controller #7 to
+the plugins 'volume' parameter.  This may be a bug, because it means
+that MIDI volume control and program changes interact in non-nice
+ways.
+
+MIDI modulation wheel controller #1 is not mapped, but interpreted
+by the plugin itself to reduce the VCF cutoff.
+
+MIDI channel pressure and key pressure are combined by the plugin to
+boost the VCF resonance.
+
+Questions that might be frequently asked
+========================================
+Q. Why doesn't the portamento (glide) work?
+A. Portamento only works in monophonic modes, and then only when one
+    note is held while another is played.  Switch to a monophonic
+    mode from the 'Configuration' tab of the GUI.
+
+Q. Woah! Where'd that nasty sound come from?
+A. A certain grittiness has always been part of Xsynth's charm for
+    me, but if you're getting really nasty sound from a patch, check
+    for the following:
+    - Volume too high: especially when using high resonance, your
+        signal may be so hot it's clipping.
+    - Resonance too high: yep, the filter will go to
+        self-oscillation with high resonance settings. Try backing
+        the resonance off.
+    - Resonance too low: Xsynth's filter is unstable near zero
+        resonance when used with high cutoffs.  Try setting the
+        resonance to 0.2.
+    - Resonance getting boosted by keyboard or channel pressure: try
+        playing softly or turning your keyboard's pressure
+        sensitivity off.  I know, this should be configurable....
+    - XSYNTH_DEBUG XDB_AUDIO set: if you've got a ~600Hz buzz in the
+        output even when you're not playing anything, your plugin
+        was probably compiled with the XDB_AUDIO debug bit set.  Fix
+        that and recompile.
+    - Pitch too high: I haven't added band-limited oscillators to
+        the render code yet, so it does alias pretty badly on higher
+        notes.  Be patient, or help with the coding.
+
+Q. Ack! Things crashed.  Did I lose my patch edits?
+A. Check in ~/.xsynth-dssi/ -- they may be saved there.
+
+Q. Why aren't the GUI slider values and the corresponding LADSPA
+    port values the same?
+A. The LADSPA port values are the actual numeric values used by the
+    synthesis code, while the GUI slider values are all the 0-to-10
+    values used in Steve Brookes' original Xsynth interface.
+
+Q. Why does the Patches list flash so horribly?
+A. Because I don't know GTK+ very well, and with my code the way it
+    is now, GTK+ insists on redrawing the Patches clist every time
+    another widget is updated.  If you know GTK+, please help me fix
+    this.
+
