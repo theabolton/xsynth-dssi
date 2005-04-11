@@ -14,7 +14,6 @@ AC_HEADER_STDC
 AC_ENABLE_STATIC(no)
 AC_ENABLE_SHARED(yes)
 AC_LIBTOOL_DLOPEN
-dnl AC_DISABLE_STATIC
 AC_PROG_LIBTOOL
 
 AC_C_BIGENDIAN
@@ -35,12 +34,25 @@ fi
 AM_CONDITIONAL(BUILD_GUI, test "x${with_gtk}" != 'xno')
 echo "GTK support: $with_gtk"
 
+dnl OS specific checks
+case "${host_os}" in
+darwin*)
+  darwin=yes
+  PKG_CHECK_MODULES(ALSA, libdssialsacompat)
+  ;;
+*)
+  darwin=no
+  PKG_CHECK_MODULES(ALSA, alsa)
+  ;;
+esac
+AM_CONDITIONAL(DARWIN, test x$darwin = xyes)
+
 dnl Require DSSI and liblo
 PKG_CHECK_MODULES(MODULE, dssi >= 0.9 liblo >= 0.12)
 
 dnl Use lotsa flags if we have gcc.
-CFLAGS="$CFLAGS $MODULE_CFLAGS"
-LDFLAGS="$LDFLAGS $MODULE_LIBS"
+CFLAGS="$CFLAGS $ALSA_CFLAGS $MODULE_CFLAGS"
+LDFLAGS="$LDFLAGS $ALSA_LIBS $MODULE_LIBS"
 changequote(,)dnl
 if test "x$GCC" = "xyes"; then
   case " $CFLAGS " in

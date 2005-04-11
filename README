@@ -9,8 +9,8 @@ Xsynth-DSSI is a classic-analog (VCOs-VCF-VCA) style software
 synthesizer which operates as a plugin for the Disposable Soft Synth
 Interface (DSSI).  DSSI is a plugin API for software instruments
 (soft synths) with user interfaces, permitting them to be hosted
-in-process by Linux audio applications.  More information on DSSI
-can be found at:
+in-process by audio applications.  More information on DSSI can be
+found at:
 
   http://dssi.sourceforge.net/
 
@@ -45,20 +45,33 @@ Xsynth-DSSI requires the following:
 
     - DSSI version 0.9 or greater, available from the
         dssi.sourceforge.net address above.
+
     - liblo version 0.12 or later, a library implementing the Open
-        Sound Control protocol, available at
+        Sound Control protocol, available at:
+
         http://plugin.org.uk/liblo/
+
     - pkgconfig with PKG_CONFIG_PATH set appropriately to pick up
         DSSI and liblo.
+
     - GTK+ version 1.2 or 2.x.  (If GTK+ is not found, the plugin
         will be built without the GUI.)
+
     - the LADSPA v1.x SDK.
+
     - the ALSA headers (DSSI plugins use ALSA structures, but not
         the actual drivers, so you don't necessarily need the
-        drivers installed.)
+        drivers installed.)  Users of non-Linux system can use
+        libdssialsacompat, available at:
+
+        http://home.jps.net/~musound/
+
     - a working DSSI host.  Xsynth-DSSI has been tested with the
-        example DSSI host available at the dssi.sourceforge.net
-        address above.
+        example DSSI host, available at the dssi.sourceforge.net
+        address above, and with ghostess, available at:
+
+        http://home.jps.net/~musound/
+
     - automake 1.7 and autoconf 2.57 or better if you wish to
         recreate the build files.
 

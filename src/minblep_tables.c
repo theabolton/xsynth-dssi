@@ -32,7 +32,7 @@
  * interpolation)
  *
  * forward-shifted step discontinuity delta truncated after local minimum
- * at the 4607th oversample (yielding a 72 sample pulse)
+ * at the 4606th oversample (yielding a 72 sample pulse)
  *
  * forward-shifted slope discontinuity delta truncated after local minimum
  * at 4513th oversample (yielding a 71 sample pulse)
@@ -1199,7 +1199,7 @@ step_dd_table[MINBLEP_PHASES * STEP_DD_PULSE_LENGTH + 1] =
  {-5.059799e-09, 2.605764e-10},{-4.799222e-09, 2.794782e-10},{-4.519744e-09, 2.977075e-10},{-4.222037e-09, 3.152236e-10},
  {-3.906813e-09, 3.319882e-10},{-3.574825e-09, 3.479630e-10},{-3.226862e-09, 3.631132e-10},{-2.863749e-09, 3.774054e-10},
  {-2.486343e-09, 3.908078e-10},{-2.095535e-09, 4.032923e-10},{-1.692243e-09, 4.148307e-10},{-1.277412e-09, 4.254000e-10},
- {-8.520123e-10, 4.349774e-10},{-4.170350e-10, 4.435438e-10},{ 2.650880e-11,-2.650880e-11},{ 0.000000e+00, 0.000000e+00},
+ {-8.520123e-10, 4.349774e-10},{-4.170350e-10, 4.170337e-10},{ 0.000000e+00, 0.000000e+00},{ 0.000000e+00, 0.000000e+00},
  { 0.000000e+00, 0.000000e+00}
 };
 

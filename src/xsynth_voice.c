@@ -68,7 +68,40 @@ xsynth_voice_note_on(xsynth_synth_t *synth, xsynth_voice_t *voice,
         XDB_MESSAGE(XDB_NOTE, " xsynth_voice_note_on in polyphonic/new section: key %d, mono %d, old status %d\n", key, synth->monophonic, voice->status);
 
         voice->target_pitch = xsynth_pitch[key];
-        voice->prev_pitch = voice->target_pitch;
+        switch(synth->glide) {
+          case XSYNTH_GLIDE_MODE_LEGATO:
+            if (synth->held_keys[0] >= 0) {
+                voice->prev_pitch = xsynth_pitch[synth->held_keys[0]];
+            } else {
+                voice->prev_pitch = voice->target_pitch;
+            }
+            break;
+
+          case XSYNTH_GLIDE_MODE_INITIAL:
+            if (synth->held_keys[0] >= 0) {
+                voice->prev_pitch = voice->target_pitch;
+            } else {
+                voice->prev_pitch = synth->last_noteon_pitch;
+            }
+            break;
+
+          case XSYNTH_GLIDE_MODE_ALWAYS:
+            if (synth->held_keys[0] >= 0) {
+                voice->prev_pitch = xsynth_pitch[synth->held_keys[0]];
+            } else {
+                voice->prev_pitch = synth->last_noteon_pitch;
+            }
+            break;
+
+          case XSYNTH_GLIDE_MODE_LEFTOVER:
+            /* leave voice->prev_pitch at whatever it was */
+            break;
+
+          default:
+          case XSYNTH_GLIDE_MODE_OFF:
+            voice->prev_pitch = voice->target_pitch;
+            break;
+        }
         if (!_PLAYING(voice)) {
             voice->lfo_pos = 0.0f;
             voice->eg1 = 0.0f;
@@ -95,6 +128,9 @@ xsynth_voice_note_on(xsynth_synth_t *synth, xsynth_voice_t *voice,
 
         /* set new pitch */
         voice->target_pitch = xsynth_pitch[key];
+        if (synth->glide == XSYNTH_GLIDE_MODE_INITIAL ||
+            synth->glide == XSYNTH_GLIDE_MODE_OFF)
+            voice->prev_pitch = voice->target_pitch;
 
         /* if in 'on' or 'both' modes, and key has changed, then re-trigger EGs */
         if ((synth->monophonic == XSYNTH_MONO_MODE_ON ||
@@ -197,6 +233,9 @@ xsynth_voice_note_off(xsynth_synth_t *synth, xsynth_voice_t *voice,
                 voice->key = synth->held_keys[0];
                 XDB_MESSAGE(XDB_NOTE, " note-off in monophonic section: changing pitch to %d\n", voice->key);
                 voice->target_pitch = xsynth_pitch[voice->key];
+                if (synth->glide == XSYNTH_GLIDE_MODE_INITIAL ||
+                    synth->glide == XSYNTH_GLIDE_MODE_OFF)
+                    voice->prev_pitch = voice->target_pitch;
 
                 /* if mono mode is 'both', re-trigger EGs */
                 if (synth->monophonic == XSYNTH_MONO_MODE_BOTH && !_RELEASED(voice)) {

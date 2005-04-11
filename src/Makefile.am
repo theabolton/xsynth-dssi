@@ -12,8 +12,6 @@ plugindir = $(libdir)/dssi
 
 plugin_LTLIBRARIES = xsynth-dssi.la
 
-xsynth_dssi_la_LDFLAGS = -module -avoid-version -Wc,-nostartfiles
-
 Xsynth_gtk_SOURCES = \
 	gui_callbacks.c \
 	gui_callbacks.h \
@@ -47,7 +45,7 @@ Xsynth_gtk_SOURCES = \
 
 Xsynth_gtk_CFLAGS = @GTK_CFLAGS@ $(AM_CFLAGS)
 
-Xsynth_gtk_LDADD = @GTK_LIBS@ -lm -llo -lpthread
+Xsynth_gtk_LDADD = -lm @GTK_LIBS@ $(AM_LDFLAGS)
 
 xsynth_dssi_la_SOURCES = \
 	gui_data.h \
@@ -65,6 +63,12 @@ xsynth_dssi_la_SOURCES = \
 	xsynth_voice.h \
 	xsynth_voice_blosc.h \
 	xsynth_voice_render.c
+
+if DARWIN
+xsynth_dssi_la_LDFLAGS = -module -avoid-version
+else
+xsynth_dssi_la_LDFLAGS = -module -avoid-version -Wc,-nostartfiles
+endif
 
 xsynth_dssi_la_LIBADD = -lm
 
