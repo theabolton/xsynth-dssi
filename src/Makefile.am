@@ -64,11 +64,7 @@ xsynth_dssi_la_SOURCES = \
 	xsynth_voice_blosc.h \
 	xsynth_voice_render.c
 
-if DARWIN
 xsynth_dssi_la_LDFLAGS = -module -avoid-version
-else
-xsynth_dssi_la_LDFLAGS = -module -avoid-version -Wc,-nostartfiles
-endif
 
 xsynth_dssi_la_LIBADD = -lm
 

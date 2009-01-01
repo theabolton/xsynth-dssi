@@ -1,6 +1,6 @@
 /* Xsynth DSSI software synthesizer plugin and GUI
  *
- * Copyright (C) 2004 Sean Bolton and others.
+ * Copyright (C) 2004, 2009 Sean Bolton and others.
  *
  * Portions of this file may have come from Steve Brookes'
  * Xsynth, copyright (C) 1999 S. J. Brookes.
@@ -17,8 +17,8 @@
  *
  * You should have received a copy of the GNU General Public
  * License along with this program; if not, write to the Free
- * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307, USA.
+ * Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA.
  */
 
 #include <ladspa.h>
@@ -80,6 +80,8 @@ struct xsynth_port_descriptor xsynth_port_description[XSYNTH_PORTS_COUNT] = {
 #undef PD_IN
 #undef HD_MIN
 #undef HD_LOW
+#undef HD_MID
+#undef HD_HI
 #undef HD_MAX
 #undef HD_440
 #undef HD_LOG

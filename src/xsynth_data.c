@@ -1,6 +1,6 @@
 /* Xsynth DSSI software synthesizer plugin and GUI
  *
- * Copyright (C) 2004 Sean Bolton and others.
+ * Copyright (C) 2004, 2009 Sean Bolton and others.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -14,8 +14,8 @@
  *
  * You should have received a copy of the GNU General Public
  * License along with this program; if not, write to the Free
- * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307, USA.
+ * Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA.
  */
 
 #include <stdlib.h>
@@ -188,10 +188,10 @@ xsynth_data_read_patch(FILE *file, xsynth_patch_t *patch)
 }
 
 int
-xsynth_data_decode_patches(const unsigned char *encoded, xsynth_patch_t *patches)
+xsynth_data_decode_patches(const char *encoded, xsynth_patch_t *patches)
 {
     int j, n, i0, i1, i2, i3;
-    const unsigned char *ep = encoded;
+    const char *ep = encoded;
     xsynth_patch_t *tmp, *pp;
 
     if (strncmp(ep, "Xp0 ", 4)) {

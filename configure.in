@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(Xsynth-DSSI, 0.9.1, musound-at-jps-dot-net)
+AC_INIT(Xsynth-DSSI, 0.9.2, musound-at-jps-dot-net)
 
 AC_CONFIG_SRCDIR(src/xsynth-dssi.c)
 AM_INIT_AUTOMAKE
@@ -8,8 +8,6 @@ AM_CONFIG_HEADER(config.h)
 
 AC_ISC_POSIX
 AC_PROG_CC
-AM_PROG_CC_STDC
-AC_HEADER_STDC
 
 AC_ENABLE_STATIC(no)
 AC_ENABLE_SHARED(yes)
@@ -46,6 +44,9 @@ darwin*)
   ;;
 esac
 AM_CONDITIONAL(DARWIN, test x$darwin = xyes)
+
+dnl Check for LADSPA
+AC_CHECK_HEADERS(ladspa.h)
 
 dnl Require DSSI and liblo
 PKG_CHECK_MODULES(MODULE, dssi >= 0.9 liblo >= 0.12)

@@ -1,6 +1,6 @@
 /* Xsynth DSSI software synthesizer GUI
  *
- * Copyright (C) 2004 Sean Bolton
+ * Copyright (C) 2004, 2009 Sean Bolton
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -14,8 +14,8 @@
  *
  * You should have received a copy of the GNU General Public
  * License along with this program; if not, write to the Free
- * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307, USA.
+ * Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -460,7 +460,7 @@ create_main_window (const char *tag)
     gtk_widget_show (osc1_waveform_pixmap);
     gtk_box_pack_start (GTK_BOX (hbox1), osc1_waveform_pixmap, FALSE, TRUE, 0);
 
-    osc1_waveform_adj = gtk_adjustment_new (0, 0, 6, 1, 1, 1);
+    osc1_waveform_adj = gtk_adjustment_new (0, 0, 6, 1, 1, 0);
     voice_widget[XSYNTH_PORT_OSC1_WAVEFORM] = osc1_waveform_adj;
   osc1_waveform_spin = gtk_spin_button_new (GTK_ADJUSTMENT (osc1_waveform_adj), 1, 0);
   gtk_widget_ref (osc1_waveform_spin);
@@ -544,7 +544,7 @@ create_main_window (const char *tag)
     gtk_widget_show (osc2_waveform_pixmap);
     gtk_box_pack_start (GTK_BOX (hbox2), osc2_waveform_pixmap, FALSE, TRUE, 0);
 
-    osc2_waveform_adj = gtk_adjustment_new (0, 0, 6, 1, 1, 1);
+    osc2_waveform_adj = gtk_adjustment_new (0, 0, 6, 1, 1, 0);
     voice_widget[XSYNTH_PORT_OSC2_WAVEFORM] = osc2_waveform_adj;
   osc2_waveform_spin = gtk_spin_button_new (GTK_ADJUSTMENT (osc2_waveform_adj), 1, 0);
   gtk_widget_ref (osc2_waveform_spin);
@@ -608,7 +608,7 @@ create_main_window (const char *tag)
     gtk_widget_show (lfo_waveform_pixmap);
     gtk_box_pack_start (GTK_BOX (hbox3), lfo_waveform_pixmap, FALSE, TRUE, 0);
 
-    lfo_waveform_adj = gtk_adjustment_new (0, 0, 5, 1, 1, 1);
+    lfo_waveform_adj = gtk_adjustment_new (0, 0, 5, 1, 1, 0);
     voice_widget[XSYNTH_PORT_LFO_WAVEFORM] = lfo_waveform_adj;
   lfo_waveform_spin = gtk_spin_button_new (GTK_ADJUSTMENT (lfo_waveform_adj), 1, 0);
   gtk_widget_ref (lfo_waveform_spin);
@@ -901,7 +901,7 @@ create_main_window (const char *tag)
                     (GtkAttachOptions) (0), 0, 0);
   gtk_misc_set_alignment (GTK_MISC (label54), 0, 0.5);
 
-  tuning_adj = gtk_adjustment_new (440, 415.3, 467.2, 0.1, 1, 1);
+  tuning_adj = gtk_adjustment_new (440, 415.3, 467.2, 0.1, 1, 0);
   tuning_spin = gtk_spin_button_new (GTK_ADJUSTMENT (tuning_adj), 1, 1);
   gtk_widget_ref (tuning_spin);
   gtk_object_set_data_full (GTK_OBJECT (main_window), "tuning_spin", tuning_spin,
@@ -923,7 +923,7 @@ create_main_window (const char *tag)
                     (GtkAttachOptions) (0), 0, 0);
   gtk_misc_set_alignment (GTK_MISC (label43), 0, 0.5);
 
-  polyphony_adj = gtk_adjustment_new (XSYNTH_DEFAULT_POLYPHONY, 1, 128, 1, 10, 10);
+  polyphony_adj = gtk_adjustment_new (XSYNTH_DEFAULT_POLYPHONY, 1, 128, 1, 10, 0);
   polyphony = gtk_spin_button_new (GTK_ADJUSTMENT (polyphony_adj), 1, 0);
   gtk_widget_ref (polyphony);
   gtk_object_set_data_full (GTK_OBJECT (main_window), "polyphony", polyphony,
@@ -1012,7 +1012,7 @@ create_main_window (const char *tag)
                     (GtkAttachOptions) (0), 0, 0);
   gtk_misc_set_alignment (GTK_MISC (bendrange_label), 0, 0.5);
 
-  bendrange_adj = gtk_adjustment_new (2, 0, 12, 1, 1, 1);
+  bendrange_adj = gtk_adjustment_new (2, 0, 12, 1, 1, 0);
   bendrange = gtk_spin_button_new (GTK_ADJUSTMENT (bendrange_adj), 1, 0);
   gtk_widget_ref (bendrange);
   gtk_object_set_data_full (GTK_OBJECT (main_window), "bendrange", bendrange,
@@ -1576,7 +1576,7 @@ create_open_file_position_window (const char *tag)
   gtk_widget_show (label50);
   gtk_box_pack_start (GTK_BOX (hbox2), label50, FALSE, TRUE, 2);
 
-  open_file_position_spin_adj = gtk_adjustment_new (0, 0, 127, 1, 10, 10);
+  open_file_position_spin_adj = gtk_adjustment_new (0, 0, 127, 1, 10, 0);
   position_spin = gtk_spin_button_new (GTK_ADJUSTMENT (open_file_position_spin_adj), 1, 0);
   gtk_widget_ref (position_spin);
   gtk_object_set_data_full (GTK_OBJECT (open_file_position_window),
@@ -1707,7 +1707,7 @@ create_save_file_range_window (const char *tag)
                       (GtkAttachOptions) (0), 0, 0);
     gtk_misc_set_alignment (GTK_MISC (label6), 0, 0.5);
 
-    save_file_start_spin_adj = gtk_adjustment_new (0, 0, 127, 1, 10, 10);
+    save_file_start_spin_adj = gtk_adjustment_new (0, 0, 127, 1, 10, 0);
     save_file_start_spin = gtk_spin_button_new (GTK_ADJUSTMENT (save_file_start_spin_adj), 1, 0);
     gtk_widget_ref (save_file_start_spin);
     gtk_object_set_data_full (GTK_OBJECT (save_file_range_window), "save_file_start_spin", save_file_start_spin,
@@ -1718,7 +1718,7 @@ create_save_file_range_window (const char *tag)
                       (GtkAttachOptions) (0), 0, 0);
     gtk_spin_button_set_numeric (GTK_SPIN_BUTTON (save_file_start_spin), TRUE);
 
-    save_file_end_spin_adj = gtk_adjustment_new (127, 0, 127, 1, 10, 10);
+    save_file_end_spin_adj = gtk_adjustment_new (127, 0, 127, 1, 10, 0);
     save_file_end_spin = gtk_spin_button_new (GTK_ADJUSTMENT (save_file_end_spin_adj), 1, 0);
     gtk_widget_ref (save_file_end_spin);
     gtk_object_set_data_full (GTK_OBJECT (save_file_range_window), "save_file_end_spin", save_file_end_spin,
@@ -1857,7 +1857,7 @@ create_edit_save_position_window (const char *tag)
   gtk_widget_show (label50);
   gtk_box_pack_start (GTK_BOX (hbox2), label50, FALSE, TRUE, 2);
 
-  edit_save_position_spin_adj = gtk_adjustment_new (0, 0, 127, 1, 10, 10);
+  edit_save_position_spin_adj = gtk_adjustment_new (0, 0, 127, 1, 10, 0);
   position_spin = gtk_spin_button_new (GTK_ADJUSTMENT (edit_save_position_spin_adj), 1, 0);
   gtk_widget_ref (position_spin);
   gtk_object_set_data_full (GTK_OBJECT (edit_save_position_window),

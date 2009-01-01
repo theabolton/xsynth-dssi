@@ -1,6 +1,6 @@
 /* Xsynth DSSI software synthesizer plugin
  *
- * Copyright (C) 2004 Sean Bolton and others.
+ * Copyright (C) 2004, 2009 Sean Bolton and others.
  *
  * Portions of this file may have come from Steve Brookes'
  * Xsynth, copyright (C) 1999 S. J. Brookes.
@@ -21,8 +21,8 @@
  *
  * You should have received a copy of the GNU General Public
  * License along with this program; if not, write to the Free
- * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307, USA.
+ * Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA.
  */
 
 #include <stdlib.h>
@@ -523,7 +523,11 @@ const DSSI_Descriptor *dssi_descriptor(unsigned long index)
     }
 }
 
+#ifdef __GNUC__
+__attribute__((constructor)) void init()
+#else
 void _init()
+#endif
 {
     int i;
     char **port_names;
@@ -593,7 +597,11 @@ void _init()
     }
 }
 
+#ifdef __GNUC__
+__attribute__((destructor)) void fini()
+#else
 void _fini()
+#endif
 {
     if (xsynth_LADSPA_descriptor) {
         free((LADSPA_PortDescriptor *) xsynth_LADSPA_descriptor->PortDescriptors);

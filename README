@@ -1,24 +1,25 @@
                                  Xsynth-DSSI
                                  ===========
-                    A software synthesizer plugin  for the
-                        Disposable Soft Synth Interface
+                    A software synthesizer plugin for the
+                          DSSI Soft Synth Interface
 
 Introduction
 ============
 Xsynth-DSSI is a classic-analog (VCOs-VCF-VCA) style software
-synthesizer which operates as a plugin for the Disposable Soft Synth
-Interface (DSSI).  DSSI is a plugin API for software instruments
-(soft synths) with user interfaces, permitting them to be hosted
+synthesizer which operates as a plugin for the DSSI Soft Synth
+Interface.  DSSI is a plugin API for software instruments (soft
+synths) with user interfaces, permitting them to be hosted
 in-process by audio applications.  More information on DSSI can be
 found at:
 
   http://dssi.sourceforge.net/
 
-Xsynth-DSSI is written by Sean Bolton, and copyright (c)2004 under the
-GNU General Public License, version 2 or later.  See the enclosed
+Xsynth-DSSI is written by Sean Bolton, and copyright (c) 2009 under
+the GNU General Public License, version 2 or later.  See the enclosed
 file COPYING for details.  While this software is 'free' within the
 requirements of this license, I (Sean) would appreciate any or all
 of the following should you find Xsynth-DSSI useful:
+
     - an email stating where you're from and how you're using
         Xsynth-DSSI, sent to <musound /at/ jps /dot/ net>.
     - copies of or links to music you've created with Xsynth-DSSI.
@@ -46,8 +47,9 @@ Xsynth-DSSI requires the following:
     - DSSI version 0.9 or greater, available from the
         dssi.sourceforge.net address above.
 
-    - liblo version 0.12 or later, a library implementing the Open
-        Sound Control protocol, available at:
+    - liblo version 0.12 or later (0.23 or later recommended), a
+        library implementing the Open Sound Control protocol,
+        available at:
 
         http://plugin.org.uk/liblo/
 
@@ -61,19 +63,19 @@ Xsynth-DSSI requires the following:
 
     - the ALSA headers (DSSI plugins use ALSA structures, but not
         the actual drivers, so you don't necessarily need the
-        drivers installed.)  Users of non-Linux system can use
+        drivers installed.)  Users of non-Linux systems can use
         libdssialsacompat, available at:
 
-        http://home.jps.net/~musound/
+        http://smbolton.com/linux.html
 
-    - a working DSSI host.  Xsynth-DSSI has been tested with the
-        example DSSI host, available at the dssi.sourceforge.net
-        address above, and with ghostess, available at:
+    - a working DSSI host.  Xsynth-DSSI has been tested with
+        jack-dssi-host, available in the DSSI distribution, and with
+        ghostess, available at:
 
-        http://home.jps.net/~musound/
+        http://smbolton.com/linux.html
 
-    - automake 1.7 and autoconf 2.57 or better if you wish to
-        recreate the build files.
+    - automake 1.7, autoconf 2.58, and libtool 1.4.3 or better if
+        you wish to recreate the build files.
 
 Installation
 ============
@@ -159,7 +161,8 @@ number of patches in the patch file, exceeds 128, the additional
 patches will not be loaded.
 
 Selecting 'Save Patch Bank...' from the 'File' menu will allow you
-to save you patch bank to a file.  It always saves the entire bank.
+to save your patch bank to a file.  After specifying the file name,
+you will be asked to specify the range of patches to be saved.
 
 Patches Tab
 -----------
@@ -185,7 +188,7 @@ architecture is described in more detail below.
 
 Note that the rotary knobs may be manipulated in several ways:
     - Clicking and dragging a knob with mouse button 1 sets the
-        value directly, but making the knob pointer point toward the
+        value directly, by making the knob pointer point toward the
         mouse pointer.
     - Clicking and dragging a knob with mouse button 3 allows
         incremental adjustment of the knob's current value (without
@@ -202,7 +205,9 @@ back to the patch bank by clicking the 'Save Changes' button.  You
 will be asked to which program number you would like to save your
 new patch.  If you do not wish to overwrite an existing patch,
 selected the highest available patch number, next to which '(empty)'
-will be displayed, to save your changes to a new slot.
+will be displayed, to save your changes to a new slot.  Be sure to
+then use 'Save Patch Bank...' from the 'File' menu to save your
+changes to a file.
 
 Configuration Tab
 -----------------

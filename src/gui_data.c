@@ -1,6 +1,6 @@
 /* Xsynth DSSI software synthesizer GUI
  *
- * Copyright (C) 2004 Sean Bolton and others.
+ * Copyright (C) 2004, 2009 Sean Bolton and others.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -14,8 +14,8 @@
  *
  * You should have received a copy of the GNU General Public
  * License along with this program; if not, write to the Free
- * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307, USA.
+ * Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -337,7 +337,7 @@ gui_data_friendly_patches(void)
 }
 
 static void
-encode_patch(xsynth_patch_t *patch, unsigned char **ep, int maxlen)
+encode_patch(xsynth_patch_t *patch, char **ep, int maxlen)
 {
     int i, n;
 
@@ -383,9 +383,9 @@ static int
 send_patch_section(int section, xsynth_patch_t *block)
 {
     int i;
-    unsigned char *e = (unsigned char *)malloc(16000);
-    unsigned char *ep = e,
-                  *ee = e + 16000;
+    char *e = (char *)malloc(16000);
+    char *ep = e,
+         *ee = e + 16000;
     char key[9];
 
     if (!e) return 0;
