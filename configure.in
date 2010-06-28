@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(Xsynth-DSSI, 0.9.2, musound-at-jps-dot-net)
+AC_INIT(Xsynth-DSSI, 0.9.3, musound-at-jps-dot-net)
 
 AC_CONFIG_SRCDIR(src/xsynth-dssi.c)
 AM_INIT_AUTOMAKE
@@ -50,6 +50,30 @@ AC_CHECK_HEADERS(ladspa.h)
 
 dnl Require DSSI and liblo
 PKG_CHECK_MODULES(MODULE, dssi >= 0.9 liblo >= 0.12)
+
+dnl Check for newlocale() et al.
+AC_MSG_CHECKING(for newlocale in xlocale.h)
+AC_TRY_COMPILE([
+    #include <xlocale.h>
+  ], [newlocale(LC_ALL_MASK, "C", NULL)], use_xlocale=yes, use_xlocale=no)
+if test "$use_xlocale" = "yes"; then
+  AC_DEFINE(THREAD_LOCALE_XLOCALE_H, 1, [Define to 1 if newlocale() is defined in xlocale.h (e.g. on Mac OS X)])
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+  AC_MSG_CHECKING(for newlocale in locale.h)
+  AC_TRY_COMPILE([
+      #define _XOPEN_SOURCE 600
+      #include <locale.h>
+    ], [newlocale(LC_ALL_MASK, "C", NULL)], use_locale=yes, use_locale=no)
+  if test "$use_locale" = "yes"; then
+    AC_DEFINE(THREAD_LOCALE_LOCALE_H, 1, [Define to 1 if newlocale() is defined in locale.h (e.g. in glibc)])
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_WARN([newlocale()/uselocale() not found, patch loading may fail in non-C locales])
+    AC_MSG_RESULT(no)
+  fi
+fi
 
 dnl Use lotsa flags if we have gcc.
 CFLAGS="$CFLAGS $ALSA_CFLAGS $MODULE_CFLAGS"

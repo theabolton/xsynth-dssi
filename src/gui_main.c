@@ -1,6 +1,6 @@
 /* Xsynth DSSI software synthesizer GUI
  *
- * Copyright (C) 2004, 2009 Sean Bolton and others.
+ * Copyright (C) 2004, 2009, 2010 Sean Bolton and others.
  *
  * Portions of this file may have come from Chris Cannam and Steve
  * Harris's public domain DSSI example code.
@@ -30,6 +30,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <locale.h>
 
 #include <gtk/gtk.h>
 #include <lo/lo.h>
@@ -296,10 +297,10 @@ main(int argc, char *argv[])
 #endif
     /* { int i; fprintf(stderr, "args:\n"); for(i=0; i<argc; i++) printf("%d: %s\n", i, argv[i]); } // debug */
     
-    gtk_set_locale();
     gtk_init(&argc, &argv);
+    setlocale(LC_NUMERIC, "C"); /* undo GTK's setlocale so floats printf/scanf portably */
 
-    if (!strcmp(argv[1], "-test")) {
+    if (argc > 1 && !strcmp(argv[1], "-test")) {
         gui_test_mode = 1;
         test_argv[0] = argv[0];
         test_argv[1] = "osc.udp://localhost:9/test/mode";

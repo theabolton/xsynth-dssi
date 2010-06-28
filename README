@@ -48,10 +48,10 @@ Xsynth-DSSI requires the following:
         dssi.sourceforge.net address above.
 
     - liblo version 0.12 or later (0.23 or later recommended), a
-        library implementing the Open Sound Control protocol,
+        library implementing the Open Sound Control (OSC) protocol,
         available at:
 
-        http://plugin.org.uk/liblo/
+        http://liblo.sourceforge.net/
 
     - pkgconfig with PKG_CONFIG_PATH set appropriately to pick up
         DSSI and liblo.

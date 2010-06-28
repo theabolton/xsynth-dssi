@@ -1,8 +1,10 @@
 /* Xsynth DSSI software synthesizer GUI
  *
- * Most of this code comes from gAlan 0.2.0, copyright (C) 1999
- * Tony Garnock-Jones, with modifications by Sean Bolton,
- * copyright (c) 2004.
+ * Copyright (C) 2008, 2010 Sean Bolton
+ *
+ * Parts of this code come from GTK+, both the library source and
+ * the example programs.  Other bits come from gAlan 0.2.0,
+ * copyright (C) 1999 Tony Garnock-Jones.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -16,71 +18,67 @@
  *
  * You should have received a copy of the GNU General Public
  * License along with this program; if not, write to the Free
- * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307, USA.
+ * Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA.
  */
 
 #ifndef __GTK_KNOB_H__
 #define __GTK_KNOB_H__
 
 #include <gdk/gdk.h>
-#include <gtk/gtkadjustment.h>
-#include <gtk/gtkwidget.h>
+#include <gtk/gtk.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define GTK_KNOB(obj)		GTK_CHECK_CAST(obj, gtk_knob_get_type(), GtkKnob)
-#define GTK_KNOB_CLASS(klass)	GTK_CHECK_CLASS_CAST(klass, gtk_knob_get_type(), GtkKnobClass)
-#define GTK_IS_KNOB(obj)	GTK_CHECK_TYPE(obj, gtk_knob_get_type())
+#define GTK_TYPE_KNOB            (gtk_knob_get_type ())
+#define GTK_KNOB(obj)		 GTK_CHECK_CAST(obj, gtk_knob_get_type(), GtkKnob)
+#define GTK_KNOB_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), GTK_TYPE_KNOB, GtkKnobClass))
+#define GTK_IS_KNOB(obj)	 GTK_CHECK_TYPE(obj, gtk_knob_get_type())
+#define GTK_IS_KNOB_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), GTK_TYPE_KNOB))
+#define GTK_KNOB_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), GTK_TYPE_KNOB, GtkKnobClass))
 
-typedef struct _GtkKnob        GtkKnob;
-typedef struct _GtkKnobClass   GtkKnobClass;
+typedef struct _GtkKnob       GtkKnob;
+typedef struct _GtkKnobClass  GtkKnobClass;
 
-struct _GtkKnob {
-  GtkWidget widget;
+struct _GtkKnob
+{
+    GtkWidget widget;
 
-  /* update policy (GTK_UPDATE_[CONTINUOUS/DELAYED/DISCONTINUOUS]) */
-  guint policy : 2;
+    GtkAdjustment *adjustment;
 
-  /* State of widget (to do with user interaction) */
-  guint8 state;
-  gint saved_x, saved_y;
+    guint  policy;   /* update policy (GTK_UPDATE_[CONTINUOUS/DELAYED/DISCONTINUOUS]) */
+    guint  state;
+    gint   center_x;
+    gint   center_y;
+    gint   saved_x;
+    gint   saved_y;
+    gfloat old_value;
 
-  /* ID of update timer, or 0 if none */
-  guint32 timer;
-
-  /* Pixmap for knob */
-  GdkPixmap *pixmap;
-  GdkBitmap *mask;
-  GdkGC *mask_gc;
-  GdkGC *red_gc;
-
-  /* Old values from adjustment stored so we know when something changes */
-  gfloat old_value;
-  gfloat old_lower;
-  gfloat old_upper;
-
-  /* The adjustment object that stores the data for this knob */
-  GtkAdjustment *adjustment;
+    guint32 timer;   /* ID of update timer, or 0 if none */
 };
 
 struct _GtkKnobClass
 {
-  GtkWidgetClass parent_class;
+    GtkWidgetClass parent_class;
 };
 
-extern GtkWidget *gtk_knob_new(GtkAdjustment *adjustment);
-extern guint gtk_knob_get_type(void);
 
-extern GtkAdjustment *gtk_knob_get_adjustment(GtkKnob *knob);
-extern void gtk_knob_set_update_policy(GtkKnob *knob, GtkUpdateType  policy);
+guint          gtk_knob_get_type(void);
+GtkWidget     *gtk_knob_new (GtkAdjustment *adjustment);
 
-extern void gtk_knob_set_adjustment(GtkKnob *knob, GtkAdjustment *adjustment);
+void           gtk_knob_set_fast_rendering(gboolean setting);
+
+GtkAdjustment *gtk_knob_get_adjustment(GtkKnob *knob);
+void           gtk_knob_set_adjustment(GtkKnob *knob, GtkAdjustment *adjustment);
+
+void           gtk_knob_set_update_policy(GtkKnob *knob, GtkUpdateType  policy);
+GtkUpdateType  gtk_knob_get_update_policy(GtkKnob *knob);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif /* __GTK_KNOB_H__ */
+

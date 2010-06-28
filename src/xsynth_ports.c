@@ -1,6 +1,6 @@
 /* Xsynth DSSI software synthesizer plugin and GUI
  *
- * Copyright (C) 2004, 2009 Sean Bolton and others.
+ * Copyright (C) 2004, 2009, 2010 Sean Bolton and others.
  *
  * Portions of this file may have come from Steve Brookes'
  * Xsynth, copyright (C) 1999 S. J. Brookes.
@@ -37,7 +37,7 @@ struct xsynth_port_descriptor xsynth_port_description[XSYNTH_PORTS_COUNT] = {
 #define HD_440     (LADSPA_HINT_BOUNDED_BELOW | LADSPA_HINT_BOUNDED_ABOVE | LADSPA_HINT_DEFAULT_440)
 #define HD_LOG     (LADSPA_HINT_LOGARITHMIC)
 #define HD_DETENT  (LADSPA_HINT_BOUNDED_BELOW | LADSPA_HINT_BOUNDED_ABOVE | LADSPA_HINT_INTEGER | LADSPA_HINT_DEFAULT_MINIMUM)
-#define HD_SWITCH  (LADSPA_HINT_BOUNDED_BELOW | LADSPA_HINT_BOUNDED_ABOVE | LADSPA_HINT_INTEGER | LADSPA_HINT_TOGGLED )
+#define HD_SWITCH  (LADSPA_HINT_TOGGLED | LADSPA_HINT_DEFAULT_0)
 #define XPT_LIN    XSYNTH_PORT_TYPE_LINEAR
 #define XPT_LOG    XSYNTH_PORT_TYPE_LOGARITHMIC
 #define XPT_DETE   XSYNTH_PORT_TYPE_DETENT
