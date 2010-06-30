@@ -1,6 +1,6 @@
 /* Xsynth DSSI software synthesizer GUI
  *
- * Copyright (C) 2004, 2009 Sean Bolton and others.
+ * Copyright (C) 2004, 2009, 2010 Sean Bolton and others.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -22,10 +22,21 @@
 #  include <config.h>
 #endif
 
+#if THREAD_LOCALE_LOCALE_H
+#define _XOPEN_SOURCE 600   /* needed for glibc newlocale() support */
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#if THREAD_LOCALE_LOCALE_H
+#include <locale.h>
+#else
+#if THREAD_LOCALE_XLOCALE_H
+#include <xlocale.h>
+#endif
+#endif
 
 #include "xsynth_types.h"
 #include "xsynth.h"
@@ -154,6 +165,37 @@ gui_data_import_patch(xsynth_patch_t *xsynth_patch,
     }
 }
 
+#if (THREAD_LOCALE_LOCALE_H || THREAD_LOCALE_XLOCALE_H)
+/* it would be nice if glibc had fprintf_l() and sscanf_l().... */
+
+static locale_t old_locale = LC_GLOBAL_LOCALE;
+static locale_t c_locale   = LC_GLOBAL_LOCALE;
+
+void
+xsynth_set_C_numeric_locale(void)
+{
+    if (c_locale == LC_GLOBAL_LOCALE) {
+        c_locale = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
+    }
+    old_locale = uselocale((locale_t)0);
+    uselocale(c_locale);
+}
+
+void
+xsynth_restore_old_numeric_locale(void)
+{
+    uselocale(old_locale);
+    if (c_locale != LC_GLOBAL_LOCALE) {
+        freelocale(c_locale);
+        c_locale = LC_GLOBAL_LOCALE;
+    }
+}
+#else
+#warning no newlocale()/uselocale() available, patch transfer may fail in non-C locales
+void xsynth_set_C_numeric_locale(void) { return; }
+void xsynth_restore_old_numeric_locale(void) { return; }
+#endif
+
 int
 gui_data_write_patch(FILE *file, xsynth_patch_t *patch)
 {
@@ -241,6 +283,7 @@ gui_data_save(char *filename, int start, int end, char **message)
         if (message) *message = strdup("could not open file for writing");
         return 0;
     }
+    xsynth_set_C_numeric_locale();
     for (i = start; i <= end; i++) {
         if (!gui_data_write_patch(fh, &patches[i])) {
             fclose(fh);
@@ -248,6 +291,7 @@ gui_data_save(char *filename, int start, int end, char **message)
             return 0;
         }
     }
+    xsynth_restore_old_numeric_locale();
     fclose(fh);
 
     if (message) {
@@ -393,8 +437,12 @@ send_patch_section(int section, xsynth_patch_t *block)
     sprintf(ep, "Xp0 ");
     ep += 4;
 
+    xsynth_set_C_numeric_locale();
+
     for (i = 0; i < 32; i++)
         encode_patch(&block[i], &ep, ee - ep);
+
+    xsynth_restore_old_numeric_locale();
 
     if (ee - ep < 4) {  /* no room left (shouldn't happen) */
         free(e);

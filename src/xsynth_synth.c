@@ -25,26 +25,11 @@
  * Boston, MA 02110-1301 USA.
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#if THREAD_LOCALE_LOCALE_H
-#define _XOPEN_SOURCE 600   /* needed for glibc newlocale() support */
-#endif
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
 #include <pthread.h>
-#if THREAD_LOCALE_LOCALE_H
-#include <locale.h>
-#else
-#if THREAD_LOCALE_XLOCALE_H
-#include <xlocale.h>
-#endif
-#endif
 
 #include <ladspa.h>
 
@@ -501,37 +486,6 @@ xsynth_synth_set_program_descriptor(xsynth_synth_t *synth,
 
 }
 
-#if (THREAD_LOCALE_LOCALE_H | THREAD_LOCALE_XLOCALE_H)
-/* it would be nice if glibc had fprintf_l() and sscanf_l().... */
-
-static locale_t old_locale = LC_GLOBAL_LOCALE;
-static locale_t c_locale   = LC_GLOBAL_LOCALE;
-
-void
-xsynth_set_C_numeric_locale(void)
-{
-    if (c_locale == LC_GLOBAL_LOCALE) {
-        c_locale = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
-    }
-    old_locale = uselocale((locale_t)0);
-    uselocale(c_locale);
-}
-
-void
-xsynth_restore_old_numeric_locale(void)
-{
-    uselocale(old_locale);
-    if (c_locale != LC_GLOBAL_LOCALE) {
-        freelocale(c_locale);
-        c_locale = LC_GLOBAL_LOCALE;
-    }
-}
-#else
-#warning no newlocale()/uselocale() available, patch transfer may fail in non-C locales
-void xsynth_set_C_numeric_locale(void) { return; }
-void xsynth_restore_old_numeric_locale(void) { return; }
-#endif
-
 /*
  * xsynth_synth_handle_patches
  */
@@ -547,13 +501,11 @@ xsynth_synth_handle_patches(xsynth_synth_t *synth, const char *key,
     if (section < 0 || section > 3)
         return dssi_configure_message("patch configuration failed: invalid section '%c'", key[7]);
 
-    xsynth_set_C_numeric_locale();
     pthread_mutex_lock(&synth->patches_mutex);
 
     ret = xsynth_data_decode_patches(value, &synth->patches[section * 32]);
 
     pthread_mutex_unlock(&synth->patches_mutex);
-    xsynth_restore_old_numeric_locale();
 
     if (!ret)
         return dssi_configure_message("patch configuration failed: corrupt data");

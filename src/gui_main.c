@@ -30,7 +30,6 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <locale.h>
 
 #include <gtk/gtk.h>
 #include <lo/lo.h>
@@ -298,7 +297,6 @@ main(int argc, char *argv[])
     /* { int i; fprintf(stderr, "args:\n"); for(i=0; i<argc; i++) printf("%d: %s\n", i, argv[i]); } // debug */
     
     gtk_init(&argc, &argv);
-    setlocale(LC_NUMERIC, "C"); /* undo GTK's setlocale so floats printf/scanf portably */
 
     if (argc > 1 && !strcmp(argv[1], "-test")) {
         gui_test_mode = 1;
