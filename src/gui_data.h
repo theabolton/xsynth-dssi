@@ -1,6 +1,6 @@
 /* Xsynth DSSI software synthesizer GUI
  *
- * Copyright (C) 2004, 2009 Sean Bolton and others.
+ * Copyright (C) 2004, 2009, 2010 Sean Bolton and others.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -41,8 +41,8 @@ void gui_data_send_dirty_patch_sections(void);
 int  gui_data_patch_compare(xsynth_patch_t *patch1, xsynth_patch_t *patch2);
 
 /* gui_friendly_patches.c */
-extern int            friendly_patch_count;
-extern xsynth_patch_t friendly_patches[];
+extern int            xsynth_friendly_patch_count;
+extern xsynth_patch_t xsynth_friendly_patches[];
 
 /* xsynth_data.c */
 extern xsynth_patch_t xsynth_init_voice;

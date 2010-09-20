@@ -459,9 +459,9 @@ xsynth_data_friendly_patches(xsynth_synth_t *synth)
 
     pthread_mutex_lock(&synth->patches_mutex);
 
-    memcpy(synth->patches, friendly_patches, friendly_patch_count * sizeof(xsynth_patch_t));
+    memcpy(synth->patches, xsynth_friendly_patches, xsynth_friendly_patch_count * sizeof(xsynth_patch_t));
 
-    for (i = friendly_patch_count; i < 128; i++) {
+    for (i = xsynth_friendly_patch_count; i < 128; i++) {
         memcpy(&synth->patches[i], &xsynth_init_voice, sizeof(xsynth_patch_t));
     }
 
@@ -499,7 +499,7 @@ xsynth_synth_handle_patches(xsynth_synth_t *synth, const char *key,
 
     section = key[7] - '0';
     if (section < 0 || section > 3)
-        return dssi_configure_message("patch configuration failed: invalid section '%c'", key[7]);
+        return xsynth_dssi_configure_message("patch configuration failed: invalid section '%c'", key[7]);
 
     pthread_mutex_lock(&synth->patches_mutex);
 
@@ -508,7 +508,7 @@ xsynth_synth_handle_patches(xsynth_synth_t *synth, const char *key,
     pthread_mutex_unlock(&synth->patches_mutex);
 
     if (!ret)
-        return dssi_configure_message("patch configuration failed: corrupt data");
+        return xsynth_dssi_configure_message("patch configuration failed: corrupt data");
 
     return NULL; /* success */
 }
@@ -527,7 +527,7 @@ xsynth_synth_handle_monophonic(xsynth_synth_t *synth, const char *value)
     else if (!strcmp(value, "off"))  mode = XSYNTH_MONO_MODE_OFF;
 
     if (mode == -1) {
-        return dssi_configure_message("error: monophonic value not recognized");
+        return xsynth_dssi_configure_message("error: monophonic value not recognized");
     }
 
     if (mode == XSYNTH_MONO_MODE_OFF) {  /* polyphonic mode */
@@ -537,13 +537,13 @@ xsynth_synth_handle_monophonic(xsynth_synth_t *synth, const char *value)
 
     } else {  /* one of the monophonic modes */
 
-        dssp_voicelist_mutex_lock(synth);
+        xsynth_voicelist_mutex_lock(synth);
 
         if (!synth->monophonic) xsynth_synth_all_voices_off(synth);
         synth->monophonic = mode;
         synth->voices = 1;
 
-        dssp_voicelist_mutex_unlock(synth);
+        xsynth_voicelist_mutex_unlock(synth);
     }
 
     return NULL;
@@ -560,7 +560,7 @@ xsynth_synth_handle_polyphony(xsynth_synth_t *synth, const char *value)
     xsynth_voice_t *voice;
 
     if (polyphony < 1 || polyphony > XSYNTH_MAX_POLYPHONY) {
-        return dssi_configure_message("error: polyphony value out of range");
+        return xsynth_dssi_configure_message("error: polyphony value out of range");
     }
     /* set the new limit */
     synth->polyphony = polyphony;
@@ -570,7 +570,7 @@ xsynth_synth_handle_polyphony(xsynth_synth_t *synth, const char *value)
 
         /* turn off any voices above the new limit */
 
-        dssp_voicelist_mutex_lock(synth);
+        xsynth_voicelist_mutex_lock(synth);
 
         for (i = polyphony; i < XSYNTH_MAX_POLYPHONY; i++) {
             voice = synth->voice[i];
@@ -579,7 +579,7 @@ xsynth_synth_handle_polyphony(xsynth_synth_t *synth, const char *value)
             }
         }
 
-        dssp_voicelist_mutex_unlock(synth);
+        xsynth_voicelist_mutex_unlock(synth);
     }
 
     return NULL;
@@ -600,7 +600,7 @@ xsynth_synth_handle_glide(xsynth_synth_t *synth, const char *value)
     else if (!strcmp(value, "off"))      mode = XSYNTH_GLIDE_MODE_OFF;
 
     if (mode == -1) {
-        return dssi_configure_message("error: glide value not recognized");
+        return xsynth_dssi_configure_message("error: glide value not recognized");
     }
 
     synth->glide = mode;
@@ -617,7 +617,7 @@ xsynth_synth_handle_bendrange(xsynth_synth_t *synth, const char *value)
     int range = atoi(value);
 
     if (range < 0 || range > 12) {
-        return dssi_configure_message("error: bendrange value out of range");
+        return xsynth_dssi_configure_message("error: bendrange value out of range");
     }
     synth->pitch_wheel_sensitivity = range;
     xsynth_synth_pitch_bend(synth, synth->pitch_wheel);  /* recalculate current pitch_bend */

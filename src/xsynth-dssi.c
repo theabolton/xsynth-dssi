@@ -1,6 +1,6 @@
 /* Xsynth DSSI software synthesizer plugin
  *
- * Copyright (C) 2004, 2009 Sean Bolton and others.
+ * Copyright (C) 2004, 2009, 2010 Sean Bolton and others.
  *
  * Portions of this file may have come from Steve Brookes'
  * Xsynth, copyright (C) 1999 S. J. Brookes.
@@ -50,7 +50,7 @@ static void xsynth_run_synth(LADSPA_Handle instance, unsigned long sample_count,
 /* ---- mutual exclusion ---- */
 
 static inline int
-dssp_voicelist_mutex_trylock(xsynth_synth_t *synth)
+xsynth_voicelist_mutex_trylock(xsynth_synth_t *synth)
 {
     int rc;
 
@@ -69,13 +69,13 @@ dssp_voicelist_mutex_trylock(xsynth_synth_t *synth)
 }
 
 inline int
-dssp_voicelist_mutex_lock(xsynth_synth_t *synth)
+xsynth_voicelist_mutex_lock(xsynth_synth_t *synth)
 {
     return pthread_mutex_lock(&synth->voicelist_mutex);
 }
 
 inline int
-dssp_voicelist_mutex_unlock(xsynth_synth_t *synth)
+xsynth_voicelist_mutex_unlock(xsynth_synth_t *synth)
 {
     return pthread_mutex_unlock(&synth->voicelist_mutex);
 }
@@ -214,7 +214,7 @@ xsynth_ladspa_run_wrapper(LADSPA_Handle instance, unsigned long sample_count)
  *
  * implements LADSPA (*deactivate)()
  */
-void
+static void
 xsynth_deactivate(LADSPA_Handle instance)
 {
     xsynth_synth_t *synth = (xsynth_synth_t *)instance;
@@ -242,10 +242,10 @@ xsynth_cleanup(LADSPA_Handle instance)
 /* ---- DSSI interface ---- */
 
 /*
- * dssi_configure_message
+ * xsynth_dssi_configure_message
  */
 char *
-dssi_configure_message(const char *fmt, ...)
+xsynth_dssi_configure_message(const char *fmt, ...)
 {
     va_list args;
     char buffer[256];
@@ -261,7 +261,7 @@ dssi_configure_message(const char *fmt, ...)
  *
  * implements DSSI (*configure)()
  */
-char *
+static char *
 xsynth_configure(LADSPA_Handle instance, const char *key, const char *value)
 {
     XDB_MESSAGE(XDB_DSSI, " xsynth_configure called with '%s' and '%s'\n", key, value);
@@ -292,7 +292,7 @@ xsynth_configure(LADSPA_Handle instance, const char *key, const char *value)
 
     } else if (!strcmp(key, "load")) {
 
-        return dssi_configure_message("warning: host sent obsolete 'load' key with filename '%s'", value);
+        return xsynth_dssi_configure_message("warning: host sent obsolete 'load' key with filename '%s'", value);
 
     }
     return strdup("error: unrecognized configure key");
@@ -303,7 +303,7 @@ xsynth_configure(LADSPA_Handle instance, const char *key, const char *value)
  *
  * implements DSSI (*get_program)()
  */
-const DSSI_Program_Descriptor *
+static const DSSI_Program_Descriptor *
 xsynth_get_program(LADSPA_Handle instance, unsigned long index)
 {
     xsynth_synth_t *synth = (xsynth_synth_t *)instance;
@@ -323,7 +323,7 @@ xsynth_get_program(LADSPA_Handle instance, unsigned long index)
  *
  * implements DSSI (*select_program)()
  */
-void
+static void
 xsynth_select_program(LADSPA_Handle handle, unsigned long bank,
                       unsigned long program)
 {
@@ -367,7 +367,7 @@ dssp_handle_pending_program_change(xsynth_synth_t *synth)
  *
  * implements DSSI (*get_midi_controller_for_port)()
  */
-int
+static int
 xsynth_get_midi_controller(LADSPA_Handle instance, unsigned long port)
 {
     XDB_MESSAGE(XDB_DSSI, " xsynth_get_midi_controller called for port %lu\n", port);
@@ -438,7 +438,7 @@ xsynth_run_synth(LADSPA_Handle instance, unsigned long sample_count,
     unsigned long burst_size;
 
     /* attempt the mutex, return only silence if lock fails. */
-    if (dssp_voicelist_mutex_trylock(synth)) {
+    if (xsynth_voicelist_mutex_trylock(synth)) {
         memset(synth->output, 0, sizeof(LADSPA_Data) * sample_count);
         return;
     }
@@ -492,7 +492,7 @@ xsynth_run_synth(LADSPA_Handle instance, unsigned long sample_count,
 *synth->output += 0.10f; /* add a 'buzz' to output so there's something audible even when quiescent */
 #endif /* defined(XSYNTH_DEBUG) && (XSYNTH_DEBUG & XDB_AUDIO) */
 
-    dssp_voicelist_mutex_unlock(synth);
+    xsynth_voicelist_mutex_unlock(synth);
 }
 
 // optional:

@@ -1,6 +1,6 @@
 /* Xsynth DSSI software synthesizer plugin
  *
- * Copyright (C) 2004, 2009 Sean Bolton and others.
+ * Copyright (C) 2004, 2009, 2010 Sean Bolton and others.
  *
  * Portions of this file may have come from Peter Hanappe's
  * Fluidsynth, copyright (C) 2003 Peter Hanappe and others.
@@ -154,9 +154,9 @@ void  xsynth_synth_render_voices(xsynth_synth_t *synth, LADSPA_Data *out,
                                  int do_control_update);
 
 /* in xsynth-dssi.c: */
-int   dssp_voicelist_mutex_lock(xsynth_synth_t *synth);
-int   dssp_voicelist_mutex_unlock(xsynth_synth_t *synth);
-char *dssi_configure_message(const char *fmt, ...);
+int   xsynth_voicelist_mutex_lock(xsynth_synth_t *synth);
+int   xsynth_voicelist_mutex_unlock(xsynth_synth_t *synth);
+char *xsynth_dssi_configure_message(const char *fmt, ...);
 
 /* these come right out of alsa/asoundef.h */
 #define MIDI_CTL_MSB_MODWHEEL           0x01    /**< Modulation */

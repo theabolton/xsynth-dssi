@@ -1,6 +1,6 @@
 /* Xsynth DSSI software synthesizer plugin
  *
- * Copyright (C) 2004, 2009 Sean Bolton.
+ * Copyright (C) 2004, 2009, 2010 Sean Bolton.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -55,7 +55,7 @@
 
 /* ==== blosc_*sine functions ==== */
 
-/* static inline */ void
+static /* inline */ void
 #if BLOSC_W_TABLE
 BLOSC_THIS(sine, unsigned long sample_count, xsynth_voice_t *voice,
            struct blosc *osc, int index, float gain, float *wp)
@@ -134,7 +134,7 @@ BLOSC_THIS(sine, unsigned long sample_count, xsynth_voice_t *voice,
 
 /* ==== blosc_*tri functions ==== */
 
-/* static inline */ void
+static /* inline */ void
 #if BLOSC_W_TABLE
 BLOSC_THIS(tri, unsigned long sample_count, xsynth_voice_t *voice,
            struct blosc *osc, int index, float gain, float *wp)
@@ -290,7 +290,7 @@ BLOSC_THIS(tri, unsigned long sample_count, xsynth_voice_t *voice,
 
 /* ==== blosc_*sawup functions ==== */
 
-/* static inline */ void
+static /* inline */ void
 #if BLOSC_W_TABLE
 BLOSC_THIS(sawup, unsigned long sample_count, xsynth_voice_t *voice,
            struct blosc *osc, int index, float gain, float *wp)
@@ -361,7 +361,7 @@ BLOSC_THIS(sawup, unsigned long sample_count, xsynth_voice_t *voice,
 
 /* ==== blosc_*sawdown functions ==== */
 
-/* static inline */ void
+static /* inline */ void
 #if BLOSC_W_TABLE
 BLOSC_THIS(sawdown, unsigned long sample_count, xsynth_voice_t *voice,
            struct blosc *osc, int index, float gain, float *wp)
@@ -432,7 +432,7 @@ BLOSC_THIS(sawdown, unsigned long sample_count, xsynth_voice_t *voice,
 
 /* ==== blosc_*rect functions ==== */
 
-/* static inline */ void
+static /* inline */ void
 #if BLOSC_W_TABLE
 BLOSC_THIS(rect, unsigned long sample_count, xsynth_voice_t *voice,
            struct blosc *osc, int index, float gain, float *wp)

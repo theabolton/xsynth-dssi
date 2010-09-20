@@ -1,6 +1,6 @@
 /* Xsynth DSSI software synthesizer plugin
  *
- * Copyright (C) 2004, 2009 Sean Bolton and others.
+ * Copyright (C) 2004, 2009, 2010 Sean Bolton and others.
  *
  * Portions of this file may have come from Steve Brookes'
  * Xsynth, copyright (C) 1999 S. J. Brookes.
@@ -154,9 +154,9 @@ struct _xsynth_voice_t
 extern float xsynth_pitch[128];
 
 typedef struct { float value, delta; } float_value_delta;
-extern float_value_delta step_dd_table[];
+extern float_value_delta xsynth_step_dd_table[];
 
-extern float slope_dd_table[];
+extern float xsynth_slope_dd_table[];
 
 /* xsynth_voice.c */
 xsynth_voice_t *xsynth_voice_new(xsynth_synth_t *synth);

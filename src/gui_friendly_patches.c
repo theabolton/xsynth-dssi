@@ -5,9 +5,9 @@
 
 #define FRIENDLY_PATCH_COUNT  57
 
-int friendly_patch_count = FRIENDLY_PATCH_COUNT;
+int xsynth_friendly_patch_count = FRIENDLY_PATCH_COUNT;
 
-xsynth_patch_t friendly_patches[FRIENDLY_PATCH_COUNT] = {
+xsynth_patch_t xsynth_friendly_patches[FRIENDLY_PATCH_COUNT] = {
     {
         "strings",
         0.996955, 2, 0.5,

@@ -1,4 +1,10 @@
-2010-06-29 version 0.9.3
+2010-09-20 CVS commit and 0.9.3 release, smbolton
+
+* Updated about_bitmap.xpm for 2010.
+* Fixed spurious flags on LADSPA_HINT_TOGGLED ports.
+* Cleaned up exported symbols.
+
+2010-06-29 CVS commit smbolton
 
 * GUI knobs now use cairo when available.
 * Fixed patch handling to more gracefully deal with locales: accept

@@ -368,9 +368,9 @@ gui_data_friendly_patches(void)
         exit(1);
     }
 
-    memcpy(patches, friendly_patches, friendly_patch_count * sizeof(xsynth_patch_t));
+    memcpy(patches, xsynth_friendly_patches, xsynth_friendly_patch_count * sizeof(xsynth_patch_t));
 
-    for (i = friendly_patch_count; i < 128; i++) {
+    for (i = xsynth_friendly_patch_count; i < 128; i++) {
         memcpy(&patches[i], &xsynth_init_voice, sizeof(xsynth_patch_t));
     }
 

@@ -127,7 +127,7 @@ _is_hexdigit(char c)
 
 static int _atof(const char *buffer, double *result); /* forward */
 
-int
+static int
 y_vsscanf(const char *buffer, const char *format, va_list ap)
 {
     char fc;
@@ -416,7 +416,7 @@ _atof(const char *z, double *pResult){
   return (int)(z - zBegin);
 }
 
-int
+static int
 y_sscanf(const char *str, const char *format, ...)
 {
     va_list ap;

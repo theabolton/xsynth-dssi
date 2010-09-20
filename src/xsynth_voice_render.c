@@ -1,6 +1,6 @@
 /* Xsynth DSSI software synthesizer plugin
  *
- * Copyright (C) 2004, 2009 Sean Bolton and others.
+ * Copyright (C) 2004, 2009, 2010 Sean Bolton and others.
  *
  * Much of this file comes from Steve Brookes' Xsynth,
  * copyright (C) 1999 S. J. Brookes.
@@ -241,7 +241,7 @@ blosc_place_step_dd(float *buffer, int index, float phase, float w, float scale)
      */
 
     while (i < MINBLEP_PHASES * STEP_DD_PULSE_LENGTH) {
-        buffer[index] += scale * (step_dd_table[i].value + r * step_dd_table[i].delta);
+        buffer[index] += scale * (xsynth_step_dd_table[i].value + r * xsynth_step_dd_table[i].delta);
         i += MINBLEP_PHASES;
         index++;
     }
@@ -261,7 +261,8 @@ blosc_place_slope_dd(float *buffer, int index, float phase, float w, float slope
     slope_delta *= w;
 
     while (i < MINBLEP_PHASES * SLOPE_DD_PULSE_LENGTH) {
-        buffer[index] += slope_delta * (slope_dd_table[i] + r * (slope_dd_table[i + 1] - slope_dd_table[i]));
+        buffer[index] += slope_delta * (xsynth_slope_dd_table[i] + r * (xsynth_slope_dd_table[i + 1] -
+                                                                        xsynth_slope_dd_table[i]));
         i += MINBLEP_PHASES;
         index++;
     }
@@ -367,7 +368,7 @@ vcf_4pole(xsynth_voice_t *voice, unsigned long sample_count,
  *
  * Fons Adriaensen's MVCLPF-3
  */
-void
+static void
 vcf_mvclpf(xsynth_voice_t *voice, unsigned long sample_count,
            float *in, float *out, float *cutoff, float res, float *amp)
 {
