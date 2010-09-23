@@ -1,6 +1,11 @@
+2010-09-23 CVS commit and 0.9.4 release, smbolton
+
+* In recent glibc, thread-specific locale functions now need
+    '#define _XOPEN_SOURCE 700'.
+
 2010-09-20 CVS commit and 0.9.3 release, smbolton
 
-* Updated about_bitmap.xpm for 2010.
+* Updated about_bitmap.xbm for 2010.
 * Fixed spurious flags on LADSPA_HINT_TOGGLED ports.
 * Cleaned up exported symbols.
 

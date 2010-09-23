@@ -23,7 +23,7 @@
 #endif
 
 #if THREAD_LOCALE_LOCALE_H
-#define _XOPEN_SOURCE 600   /* needed for glibc newlocale() support */
+#define _XOPEN_SOURCE 700   /* needed for glibc newlocale() support */
 #endif
 
 #include <stdlib.h>
