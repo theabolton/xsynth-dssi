@@ -77,7 +77,7 @@ fi
 
 dnl Use lotsa flags if we have gcc.
 CFLAGS="$CFLAGS $ALSA_CFLAGS $MODULE_CFLAGS"
-LDFLAGS="$LDFLAGS $ALSA_LIBS $MODULE_LIBS"
+LDFLAGS="$LDFLAGS $MODULE_LIBS"
 changequote(,)dnl
 if test "x$GCC" = "xyes"; then
   case " $CFLAGS " in

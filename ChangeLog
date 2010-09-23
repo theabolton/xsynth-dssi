@@ -1,5 +1,7 @@
 2010-09-23 CVS commit and 0.9.4 release, smbolton
 
+* Don't link against alsa-lib (or libdssialsacompat): all we need
+    are the ALSA headers.
 * In recent glibc, thread-specific locale functions now need
     '#define _XOPEN_SOURCE 700'.
 

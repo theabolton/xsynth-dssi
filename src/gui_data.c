@@ -49,12 +49,12 @@
 static float
 le_float(unsigned char *p)
 {
-    unsigned char c[4];
-    c[3] = *p++;
-    c[2] = *p++;
-    c[1] = *p++;
-    c[0] = *p;
-    return *((float *)c);
+    union { unsigned char c[4]; float f; } u;
+    u.c[3] = *p++;
+    u.c[2] = *p++;
+    u.c[1] = *p++;
+    u.c[0] = *p;
+    return u.f;
 }
 #else  /* little-endian: */
 static float
